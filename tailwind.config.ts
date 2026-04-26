@@ -47,6 +47,15 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        phone: {
+          DEFAULT: "hsl(var(--phone))",
+          border: "hsl(var(--phone-border))",
+        },
+        surface: {
+          DEFAULT: "hsl(var(--surface))",
+        },
+        "surface-2": "hsl(var(--surface-2))",
+        "primary-glow": "hsl(var(--primary-glow))",
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
