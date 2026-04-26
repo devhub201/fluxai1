@@ -2,114 +2,108 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Fluxa AI Design System — Dark theme with green accent */
+/* Fluxa AI — Real app design system, dark with green accent */
 
 @layer base {
   :root {
-    /* Page / app background (deep near-black) */
-    --background: 220 30% 4%;
+    --background: 222 30% 5%;
     --foreground: 0 0% 100%;
 
-    /* Phone frame background (slightly lighter dark) */
-    --phone: 222 24% 7%;
-    --phone-border: 220 20% 14%;
-
-    /* Cards / surfaces inside phone */
-    --card: 220 22% 10%;
+    --card: 222 24% 8%;
     --card-foreground: 0 0% 100%;
-    --surface: 220 20% 9%;
-    --surface-2: 220 18% 13%;
+    --surface: 222 22% 9%;
+    --surface-2: 222 20% 12%;
 
-    --popover: 220 22% 10%;
+    --popover: 222 24% 8%;
     --popover-foreground: 0 0% 100%;
 
-    /* Brand green */
     --primary: 142 71% 45%;
-    --primary-foreground: 220 30% 6%;
+    --primary-foreground: 222 30% 6%;
     --primary-glow: 142 80% 55%;
 
-    --secondary: 220 18% 14%;
+    --secondary: 222 18% 14%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 220 18% 14%;
-    --muted-foreground: 220 10% 60%;
+    --muted: 222 18% 14%;
+    --muted-foreground: 222 10% 62%;
 
     --accent: 142 71% 45%;
-    --accent-foreground: 220 30% 6%;
+    --accent-foreground: 222 30% 6%;
 
     --destructive: 0 75% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 16% 18%;
-    --input: 220 18% 14%;
+    --border: 222 16% 18%;
+    --input: 222 18% 14%;
     --ring: 142 71% 45%;
 
     --radius: 0.875rem;
 
-    /* Page (outside phones) gradient backdrop */
-    --page-bg: radial-gradient(ellipse at top, hsl(220 30% 8%) 0%, hsl(220 30% 3%) 70%);
-
-    /* Phone radial green glow used on splash & success screens */
+    --page-bg: radial-gradient(ellipse at top, hsl(222 30% 9%) 0%, hsl(222 30% 4%) 70%);
     --glow-green: radial-gradient(circle at 50% 50%, hsl(142 80% 50% / 0.25) 0%, transparent 60%);
-  }
-
-  .dark {
-    --background: 220 30% 4%;
-    --foreground: 0 0% 100%;
   }
 }
 
 @layer base {
-  * {
-    @apply border-border;
-  }
-  html {
-    color-scheme: dark;
-  }
+  * { @apply border-border; }
+  html { color-scheme: dark; }
   body {
     @apply bg-background text-foreground antialiased;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
   }
+  /* nicer scrollbars */
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: hsl(var(--border)); border-radius: 8px; }
+  ::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-foreground) / 0.4); }
 }
 
 @layer components {
-  /* Phone shell — iPhone-like rounded frame */
-  .phone-frame {
-    @apply relative mx-auto overflow-hidden;
-    width: 320px;
-    min-height: 640px;
-    border-radius: 36px;
-    background: hsl(var(--phone));
-    border: 1px solid hsl(var(--phone-border));
-    box-shadow:
-      0 0 0 1px hsl(220 20% 12%),
-      0 30px 60px -20px hsl(0 0% 0% / 0.7);
-  }
-
-  .status-bar {
-    @apply flex items-center justify-between px-6 pt-3 pb-1 text-[13px] font-semibold text-foreground;
-  }
-
   .field {
     @apply w-full h-12 rounded-xl bg-surface-2 border border-border/60 pl-11 pr-11 text-sm text-foreground placeholder:text-muted-foreground/70 outline-none focus:border-primary/60 transition-colors;
   }
-
   .field-icon {
-    @apply absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground;
+    @apply absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none;
   }
-
   .btn-primary {
-    @apply w-full h-12 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 transition-colors flex items-center justify-center;
+    @apply w-full h-12 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 active:scale-[0.99] transition-all flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed;
   }
-
   .btn-outline {
     @apply w-full h-12 rounded-xl border border-border bg-transparent text-foreground font-semibold text-sm hover:bg-surface-2 transition-colors flex items-center justify-center;
   }
-
   .green-orb {
     background: radial-gradient(circle at 50% 50%,
       hsl(142 80% 50% / 0.45) 0%,
       hsl(142 80% 45% / 0.15) 40%,
       transparent 70%);
   }
+
+  /* Auth page shared shell */
+  .auth-shell {
+    @apply min-h-screen w-full flex items-center justify-center p-4 sm:p-6;
+    background: var(--page-bg);
+  }
+  .auth-card {
+    @apply w-full max-w-md rounded-2xl bg-card/60 backdrop-blur-xl border border-border p-6 sm:p-8 shadow-2xl;
+  }
+
+  /* Markdown / message styling */
+  .prose-msg {
+    @apply text-[15px] leading-relaxed text-foreground;
+  }
+  .prose-msg p { @apply mb-3 last:mb-0; }
+  .prose-msg h1, .prose-msg h2, .prose-msg h3 { @apply font-semibold mb-2 mt-3 text-foreground; }
+  .prose-msg ul, .prose-msg ol { @apply pl-5 mb-3 space-y-1; }
+  .prose-msg ul { list-style: disc; }
+  .prose-msg ol { list-style: decimal; }
+  .prose-msg code:not(pre code) {
+    @apply px-1.5 py-0.5 rounded bg-surface-2 text-primary text-[13px] font-mono;
+  }
+  .prose-msg pre {
+    @apply rounded-xl bg-[#0a0e14] border border-border p-3 overflow-x-auto my-3 text-[13px] font-mono leading-relaxed;
+  }
+  .prose-msg pre code { @apply text-foreground/90; }
+  .prose-msg a { @apply text-primary underline; }
+  .prose-msg strong { @apply font-semibold text-foreground; }
+  .prose-msg blockquote { @apply border-l-2 border-primary pl-3 my-3 text-muted-foreground italic; }
 }
