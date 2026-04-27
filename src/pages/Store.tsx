@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Search, SlidersHorizontal, Flame, Crown, ShoppingBag, ChevronRight, Star, Zap, BadgeCheck } from "lucide-react";
 import { TOOLS } from "@/lib/tools";
 
