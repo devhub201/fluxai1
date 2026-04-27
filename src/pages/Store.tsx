@@ -79,7 +79,7 @@ export default function Store() {
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
             {tools.map((t) => (
-              <div key={t.name} className="rounded-2xl bg-card border border-border p-3 hover:border-primary/40 transition-colors">
+              <Link key={t.id} to={`/tools/${t.id}`} className="rounded-2xl bg-card border border-border p-3 hover:border-primary/40 transition-colors block">
                 <div className={`h-14 w-14 rounded-xl bg-gradient-to-br ${t.color} border flex items-center justify-center mb-3`}>
                   <t.icon className="h-6 w-6" />
                 </div>
@@ -89,7 +89,7 @@ export default function Store() {
                   <span className="inline-flex items-center gap-1 text-primary"><Zap className="h-3.5 w-3.5 fill-primary" />{t.credits}</span>
                   <span className="inline-flex items-center gap-1 text-yellow-400"><Star className="h-3.5 w-3.5 fill-yellow-400" />{t.rating}</span>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         </section>
