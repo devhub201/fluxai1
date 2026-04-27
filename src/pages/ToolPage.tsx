@@ -3,6 +3,7 @@ import { ArrowLeft, Star, Zap } from "lucide-react";
 import { getTool } from "@/lib/tools";
 import { useCredits } from "@/hooks/useCredits";
 import { useState } from "react";
+import { addLog } from "@/lib/adminStore";
 
 export default function ToolPage() {
   const { id } = useParams();
@@ -25,7 +26,10 @@ export default function ToolPage() {
   const Icon = tool.icon;
 
   const handleUse = () => {
-    if (spend(tool.credits)) setUnlocked(true);
+    if (spend(tool.credits)) {
+      addLog({ type: "tool", message: `Used ${tool.name}`, amount: tool.credits });
+      setUnlocked(true);
+    }
   };
 
   return (

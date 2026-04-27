@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { toast } from "sonner";
+import { addLog } from "@/lib/adminStore";
 
 const STORAGE_KEY = "fluxa_credits_v1";
 const DAILY_AMOUNT = 100;
@@ -57,6 +58,7 @@ export const useCredits = () => {
     }
     const next = Math.max(0, current.credits - amount);
     setState({ ...current, credits: next });
+    addLog({ type: "credit", message: `Credits used`, amount: -amount });
     toast.success(`Credits used (-${amount})`);
     return true;
   }, []);
