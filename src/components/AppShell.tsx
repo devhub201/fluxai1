@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate, useParams } from "react-router-dom";
-import { Plus, Search, Settings as SettingsIcon, LogOut, Menu, X, MessageCircle, Trash2, LayoutGrid, ShoppingBag, History as HistoryIcon, User as UserIcon, Zap } from "lucide-react";
+import { Plus, Search, Settings as SettingsIcon, LogOut, Menu, X, MessageCircle, Trash2, LayoutGrid, ShoppingBag, History as HistoryIcon, User as UserIcon, Zap, Shield } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { FluxaWordmark } from "@/components/FluxaWordmark";
 import { useCredits } from "@/hooks/useCredits";
 import { DiscordButton } from "@/components/DiscordButton";
+import { AnnouncementBanner } from "@/components/AnnouncementBanner";
+import { ADMIN_EMAIL } from "@/lib/adminStore";
 import { toast } from "sonner";
 
 interface Chat {
