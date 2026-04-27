@@ -17,7 +17,7 @@ export default function History() {
 
   return (
     <div className="h-full overflow-y-auto">
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 pb-28 md:pb-10 space-y-4">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 pb-10 space-y-4">
         <header>
           <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">History</h1>
           <p className="text-sm text-muted-foreground mt-1">Your recent chat sessions.</p>

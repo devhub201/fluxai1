@@ -33,7 +33,7 @@ export default function Store() {
   const [active, setActive] = useState("All");
   return (
     <div className="h-full overflow-y-auto">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 pb-28 md:pb-10 space-y-6">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 pb-10 space-y-6">
         {/* Header */}
         <header>
           <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">
