@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate, useParams } from "react-router-dom";
-import { Plus, Search, Settings as SettingsIcon, LogOut, Menu, X, MessageCircle, Trash2, LayoutGrid, ShoppingBag, History as HistoryIcon, User as UserIcon } from "lucide-react";
+import { Plus, Search, Settings as SettingsIcon, LogOut, Menu, X, MessageCircle, Trash2, LayoutGrid, ShoppingBag, History as HistoryIcon, User as UserIcon, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { FluxaWordmark } from "@/components/FluxaWordmark";
@@ -145,6 +145,49 @@ export const AppShell = () => {
           <Link to="/settings" className="text-muted-foreground hover:text-foreground" aria-label="Settings"><SettingsIcon className="h-4 w-4" /></Link>
           <button onClick={handleSignOut} className="text-muted-foreground hover:text-destructive" aria-label="Sign out"><LogOut className="h-4 w-4" /></button>
         </div>
+
+        {/* Fluxa AI Pro upgrade card */}
+        <div className="px-3 pb-3">
+          <div className="rounded-xl border border-border bg-surface-2/60 p-3 flex items-center gap-3">
+            <div className="h-9 w-9 rounded-lg bg-primary/15 border border-primary/30 flex items-center justify-center shrink-0">
+              <Zap className="h-4 w-4 text-primary fill-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-semibold truncate">Fluxa AI Pro</div>
+              <div className="text-[11px] text-muted-foreground truncate">Unlock more power with Fluxa AI Pro.</div>
+            </div>
+            <button className="text-xs font-semibold text-primary border border-primary/40 rounded-lg px-3 py-1.5 hover:bg-primary/10">
+              Upgrade
+            </button>
+          </div>
+        </div>
+
+        {/* Bottom nav inside sidebar */}
+        <div className="border-t border-border grid grid-cols-5 h-16">
+          {[
+            { to: "/chat", label: "Chats", icon: MessageCircle },
+            { to: "/tools", label: "Tools", icon: LayoutGrid },
+            { to: "/store", label: "Store", icon: ShoppingBag },
+            { to: "/history", label: "History", icon: HistoryIcon },
+            { to: "/settings", label: "Profile", icon: UserIcon },
+          ].map(({ to, label, icon: Icon }) => {
+            const active = location.pathname.startsWith(to);
+            return (
+              <Link
+                key={to}
+                to={to}
+                className={`flex flex-col items-center justify-center gap-0.5 text-[11px] ${
+                  active ? "text-primary" : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <div className={active ? "h-9 w-9 rounded-xl border border-primary/40 bg-primary/10 flex items-center justify-center" : "flex items-center justify-center"}>
+                  <Icon className="h-5 w-5" />
+                </div>
+                <span>{label}</span>
+              </Link>
+            );
+          })}
+        </div>
       </aside>
 
       {/* Main */}
@@ -157,39 +200,6 @@ export const AppShell = () => {
         <div className="flex-1 min-h-0">
           <Outlet />
         </div>
-
-        {/* Mobile bottom nav */}
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-card/95 backdrop-blur border-t border-border">
-          <div className="grid grid-cols-5 h-16">
-            {[
-              { to: "/chat", label: "Chats", icon: MessageCircle },
-              { to: "/tools", label: "Tools", icon: LayoutGrid },
-              { to: "/store", label: "Store", icon: ShoppingBag },
-              { to: "/history", label: "History", icon: HistoryIcon },
-              { to: "/settings", label: "Profile", icon: UserIcon },
-            ].map(({ to, label, icon: Icon }) => (
-              <NavLink
-                key={to}
-                to={to}
-                end={to === "/chat"}
-                className={({ isActive }) =>
-                  `flex flex-col items-center justify-center gap-0.5 text-[11px] ${
-                    isActive ? "text-primary" : "text-muted-foreground"
-                  }`
-                }
-              >
-                {({ isActive }) => (
-                  <>
-                    <div className={isActive ? "h-9 w-9 rounded-xl border border-primary/40 bg-primary/10 flex items-center justify-center" : "flex items-center justify-center"}>
-                      <Icon className="h-5 w-5" />
-                    </div>
-                    <span>{label}</span>
-                  </>
-                )}
-              </NavLink>
-            ))}
-          </div>
-        </nav>
       </main>
     </div>
   );
