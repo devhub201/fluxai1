@@ -57,6 +57,7 @@ export const useCredits = () => {
     }
     const next = Math.max(0, current.credits - amount);
     setState({ ...current, credits: next });
+    addLog({ type: "credit", message: `Credits used`, amount: -amount });
     toast.success(`Credits used (-${amount})`);
     return true;
   }, []);
