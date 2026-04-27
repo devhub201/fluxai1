@@ -19,6 +19,16 @@ import ToolPage from "./pages/ToolPage";
 import History from "./pages/History";
 import NotFound from "./pages/NotFound";
 import { DiscordButton } from "./components/DiscordButton";
+import AdminLogin from "./pages/admin/AdminLogin";
+import { AdminGuard } from "./pages/admin/AdminGuard";
+import { AdminShell } from "./pages/admin/AdminShell";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminUsers from "./pages/admin/AdminUsers";
+import AdminTools from "./pages/admin/AdminTools";
+import AdminCredits from "./pages/admin/AdminCredits";
+import AdminAnnouncements from "./pages/admin/AdminAnnouncements";
+import AdminLogs from "./pages/admin/AdminLogs";
+import AdminSettings from "./pages/admin/AdminSettings";
 
 const queryClient = new QueryClient();
 
@@ -45,6 +55,18 @@ const App = () => (
               <Route path="/store" element={<Store />} />
               <Route path="/history" element={<History />} />
               <Route path="/settings" element={<Settings />} />
+            </Route>
+
+            {/* Admin */}
+            <Route path="/admin/login" element={<AdminLogin />} />
+            <Route element={<AdminGuard><AdminShell /></AdminGuard>}>
+              <Route path="/admin" element={<AdminDashboard />} />
+              <Route path="/admin/users" element={<AdminUsers />} />
+              <Route path="/admin/tools" element={<AdminTools />} />
+              <Route path="/admin/credits" element={<AdminCredits />} />
+              <Route path="/admin/announcements" element={<AdminAnnouncements />} />
+              <Route path="/admin/logs" element={<AdminLogs />} />
+              <Route path="/admin/settings" element={<AdminSettings />} />
             </Route>
 
             {/* Legacy redirects */}
