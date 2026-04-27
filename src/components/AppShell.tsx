@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate, useParams } from "react-router-dom";
-import { Plus, Search, Settings as SettingsIcon, LogOut, Menu, X, MessageCircle, Trash2 } from "lucide-react";
+import { Plus, Search, Settings as SettingsIcon, LogOut, Menu, X, MessageCircle, Trash2, LayoutGrid, ShoppingBag, History as HistoryIcon, User as UserIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { FluxaWordmark } from "@/components/FluxaWordmark";
@@ -157,6 +157,39 @@ export const AppShell = () => {
         <div className="flex-1 min-h-0">
           <Outlet />
         </div>
+
+        {/* Mobile bottom nav */}
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-card/95 backdrop-blur border-t border-border">
+          <div className="grid grid-cols-5 h-16">
+            {[
+              { to: "/chat", label: "Chats", icon: MessageCircle },
+              { to: "/tools", label: "Tools", icon: LayoutGrid },
+              { to: "/store", label: "Store", icon: ShoppingBag },
+              { to: "/history", label: "History", icon: HistoryIcon },
+              { to: "/settings", label: "Profile", icon: UserIcon },
+            ].map(({ to, label, icon: Icon }) => (
+              <NavLink
+                key={to}
+                to={to}
+                end={to === "/chat"}
+                className={({ isActive }) =>
+                  `flex flex-col items-center justify-center gap-0.5 text-[11px] ${
+                    isActive ? "text-primary" : "text-muted-foreground"
+                  }`
+                }
+              >
+                {({ isActive }) => (
+                  <>
+                    <div className={isActive ? "h-9 w-9 rounded-xl border border-primary/40 bg-primary/10 flex items-center justify-center" : "flex items-center justify-center"}>
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <span>{label}</span>
+                  </>
+                )}
+              </NavLink>
+            ))}
+          </div>
+        </nav>
       </main>
     </div>
   );
