@@ -14,7 +14,7 @@ const tools = [
 export default function Tools() {
   return (
     <div className="h-full overflow-y-auto">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 pb-28 md:pb-10 space-y-6">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 pb-10 space-y-6">
         <header>
           <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">All <span className="text-primary">Tools</span></h1>
           <p className="text-sm text-muted-foreground mt-1">Browse every Fluxa AI tool in one place.</p>
