@@ -15,8 +15,10 @@ import Chat from "./pages/Chat";
 import Settings from "./pages/Settings";
 import Store from "./pages/Store";
 import Tools from "./pages/Tools";
+import ToolPage from "./pages/ToolPage";
 import History from "./pages/History";
 import NotFound from "./pages/NotFound";
+import { DiscordButton } from "./components/DiscordButton";
 
 const queryClient = new QueryClient();
 
@@ -39,6 +41,7 @@ const App = () => (
               <Route path="/chat" element={<Chat />} />
               <Route path="/chat/:id" element={<Chat />} />
               <Route path="/tools" element={<Tools />} />
+              <Route path="/tools/:id" element={<ToolPage />} />
               <Route path="/store" element={<Store />} />
               <Route path="/history" element={<History />} />
               <Route path="/settings" element={<Settings />} />
@@ -55,6 +58,7 @@ const App = () => (
 
             <Route path="*" element={<NotFound />} />
           </Routes>
+          <DiscordButton />
         </BrowserRouter>
       </TooltipProvider>
     </AuthProvider>

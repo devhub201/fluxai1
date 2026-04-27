@@ -1,15 +1,6 @@
-import { Code2, Image as ImageIcon, Globe, FileText, MessageSquare, FileSearch, Mail, Megaphone, Zap, Star } from "lucide-react";
-
-const tools = [
-  { name: "Code Generator", desc: "Generate clean, efficient code for any language.", credits: 399, rating: 4.8, icon: Code2, color: "from-emerald-500/20 to-emerald-500/5 text-emerald-400 border-emerald-500/30" },
-  { name: "AI Image Generator", desc: "Create stunning images from text descriptions.", credits: 299, rating: 4.7, icon: ImageIcon, color: "from-fuchsia-500/20 to-fuchsia-500/5 text-fuchsia-400 border-fuchsia-500/30" },
-  { name: "Website Builder", desc: "Build complete websites with AI in minutes.", credits: 499, rating: 4.9, icon: Globe, color: "from-blue-500/20 to-blue-500/5 text-blue-400 border-blue-500/30" },
-  { name: "Script Writer", desc: "Write engaging scripts for videos, ads, and more.", credits: 299, rating: 4.6, icon: FileText, color: "from-orange-500/20 to-orange-500/5 text-orange-400 border-orange-500/30" },
-  { name: "Prompt Generator", desc: "Generate perfect prompts for any task.", credits: 199, rating: 4.5, icon: MessageSquare, color: "from-pink-500/20 to-pink-500/5 text-pink-400 border-pink-500/30" },
-  { name: "Text Summarizer", desc: "Summarize long texts into key points.", credits: 149, rating: 4.7, icon: FileSearch, color: "from-cyan-500/20 to-cyan-500/5 text-cyan-400 border-cyan-500/30" },
-  { name: "Email Writer", desc: "Write professional emails for any purpose.", credits: 199, rating: 4.6, icon: Mail, color: "from-green-500/20 to-green-500/5 text-green-400 border-green-500/30" },
-  { name: "Marketing Copy", desc: "Create compelling copy that converts.", credits: 249, rating: 4.8, icon: Megaphone, color: "from-violet-500/20 to-violet-500/5 text-violet-400 border-violet-500/30" },
-];
+import { Link } from "react-router-dom";
+import { Zap, Star } from "lucide-react";
+import { TOOLS } from "@/lib/tools";
 
 export default function Tools() {
   return (
@@ -20,8 +11,12 @@ export default function Tools() {
           <p className="text-sm text-muted-foreground mt-1">Browse every Fluxa AI tool in one place.</p>
         </header>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-          {tools.map((t) => (
-            <div key={t.name} className="rounded-2xl bg-card border border-border p-3 hover:border-primary/40 transition-colors">
+          {TOOLS.map((t) => (
+            <Link
+              key={t.id}
+              to={`/tools/${t.id}`}
+              className="text-left rounded-2xl bg-card border border-border p-3 hover:border-primary/40 transition-colors block"
+            >
               <div className={`h-14 w-14 rounded-xl bg-gradient-to-br ${t.color} border flex items-center justify-center mb-3`}>
                 <t.icon className="h-6 w-6" />
               </div>
@@ -31,7 +26,7 @@ export default function Tools() {
                 <span className="inline-flex items-center gap-1 text-primary"><Zap className="h-3.5 w-3.5 fill-primary" />{t.credits}</span>
                 <span className="inline-flex items-center gap-1 text-yellow-400"><Star className="h-3.5 w-3.5 fill-yellow-400" />{t.rating}</span>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       </div>
