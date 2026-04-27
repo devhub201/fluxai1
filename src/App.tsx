@@ -13,6 +13,9 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import Chat from "./pages/Chat";
 import Settings from "./pages/Settings";
+import Store from "./pages/Store";
+import Tools from "./pages/Tools";
+import History from "./pages/History";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -35,6 +38,9 @@ const App = () => (
             <Route element={<ProtectedRoute><AppShell /></ProtectedRoute>}>
               <Route path="/chat" element={<Chat />} />
               <Route path="/chat/:id" element={<Chat />} />
+              <Route path="/tools" element={<Tools />} />
+              <Route path="/store" element={<Store />} />
+              <Route path="/history" element={<History />} />
               <Route path="/settings" element={<Settings />} />
             </Route>
 
@@ -45,7 +51,6 @@ const App = () => (
             <Route path="/code" element={<Navigate to="/chat" replace />} />
             <Route path="/empty" element={<Navigate to="/chat" replace />} />
             <Route path="/upload" element={<Navigate to="/chat" replace />} />
-            <Route path="/tools" element={<Navigate to="/chat" replace />} />
             <Route path="/sidebar" element={<Navigate to="/chat" replace />} />
 
             <Route path="*" element={<NotFound />} />
