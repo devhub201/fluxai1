@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { FluxaWordmark } from "@/components/FluxaWordmark";
 import { useCredits } from "@/hooks/useCredits";
+import { DiscordButton } from "@/components/DiscordButton";
 import { toast } from "sonner";
 
 interface Chat {
@@ -202,6 +203,7 @@ export const AppShell = () => {
             <span className="inline-flex items-center gap-1 text-xs font-semibold text-primary border border-primary/30 bg-primary/10 rounded-full px-3 py-1.5">
               <Zap className="h-3.5 w-3.5 fill-primary" /> {credits}
             </span>
+            <DiscordButton />
             <button onClick={newChat} aria-label="New chat" className="md:hidden text-foreground"><Plus className="h-5 w-5" /></button>
           </div>
         </div>
