@@ -4,6 +4,7 @@ import { Plus, Search, Settings as SettingsIcon, LogOut, Menu, X, MessageCircle,
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { FluxaWordmark } from "@/components/FluxaWordmark";
+import { useCredits } from "@/hooks/useCredits";
 import { toast } from "sonner";
 
 interface Chat {
@@ -17,6 +18,7 @@ export const AppShell = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const params = useParams();
+  const { credits } = useCredits();
   const [chats, setChats] = useState<Chat[]>([]);
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
@@ -192,10 +194,16 @@ export const AppShell = () => {
 
       {/* Main */}
       <main className="flex-1 flex flex-col min-w-0">
-        <div className="md:hidden flex items-center justify-between px-4 py-3 border-b border-border">
-          <button onClick={() => setOpen(true)} aria-label="Open menu" className="text-foreground"><Menu className="h-5 w-5" /></button>
-          <FluxaWordmark size="sm" />
-          <button onClick={newChat} aria-label="New chat" className="text-foreground"><Plus className="h-5 w-5" /></button>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+          <button onClick={() => setOpen(true)} aria-label="Open menu" className="md:hidden text-foreground"><Menu className="h-5 w-5" /></button>
+          <div className="md:hidden"><FluxaWordmark size="sm" /></div>
+          <div className="hidden md:block" />
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1 text-xs font-semibold text-primary border border-primary/30 bg-primary/10 rounded-full px-3 py-1.5">
+              <Zap className="h-3.5 w-3.5 fill-primary" /> {credits}
+            </span>
+            <button onClick={newChat} aria-label="New chat" className="md:hidden text-foreground"><Plus className="h-5 w-5" /></button>
+          </div>
         </div>
         <div className="flex-1 min-h-0">
           <Outlet />
