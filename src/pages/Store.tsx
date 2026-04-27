@@ -62,9 +62,9 @@ export default function Store() {
             </span>
             <h2 className="mt-3 text-2xl sm:text-3xl font-bold">AI Website Builder</h2>
             <p className="text-sm text-muted-foreground mt-1">Build beautiful, responsive websites in seconds with AI.</p>
-            <button className="mt-4 inline-flex items-center gap-2 h-10 px-4 rounded-xl bg-card border border-primary/40 text-primary text-sm font-semibold hover:bg-primary/10">
+            <Link to="/tools/website-builder" className="mt-4 inline-flex items-center gap-2 h-10 px-4 rounded-xl bg-card border border-primary/40 text-primary text-sm font-semibold hover:bg-primary/10">
               <Zap className="h-4 w-4 fill-primary" /> 499 Credits
-            </button>
+            </Link>
           </div>
           <div className="absolute right-2 sm:right-6 top-1/2 -translate-y-1/2 text-7xl sm:text-8xl opacity-90 select-none">
             🛍️
