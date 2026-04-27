@@ -152,7 +152,15 @@ export const AppShell = () => {
         </div>
 
         {/* Fluxa AI Pro upgrade card */}
-        <div className="px-3 pb-3">
+        <div className="px-3 pb-3 space-y-2">
+          {user?.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase() && (
+            <Link
+              to="/admin"
+              className="w-full flex items-center gap-2 h-10 px-3 rounded-xl bg-primary/10 border border-primary/40 text-primary text-sm font-semibold hover:bg-primary/15"
+            >
+              <Shield className="h-4 w-4" /> Admin Panel
+            </Link>
+          )}
           <div className="rounded-xl border border-border bg-surface-2/60 p-3 flex items-center gap-3">
             <div className="h-9 w-9 rounded-lg bg-primary/15 border border-primary/30 flex items-center justify-center shrink-0">
               <Zap className="h-4 w-4 text-primary fill-primary" />
@@ -209,8 +217,11 @@ export const AppShell = () => {
             <button onClick={newChat} aria-label="New chat" className="md:hidden text-foreground"><Plus className="h-5 w-5" /></button>
           </div>
         </div>
-        <div className="flex-1 min-h-0">
-          <Outlet />
+        <div className="flex-1 min-h-0 flex flex-col">
+          <AnnouncementBanner />
+          <div className="flex-1 min-h-0">
+            <Outlet />
+          </div>
         </div>
       </main>
     </div>
