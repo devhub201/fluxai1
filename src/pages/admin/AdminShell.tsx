@@ -15,8 +15,9 @@ import {
   Search,
   Bell,
 } from "lucide-react";
-import { getMetrics, setSession } from "@/lib/adminStore";
+import { setSession } from "@/lib/adminStore";
 import { useAdminStore } from "@/hooks/useAdminStore";
+import { useAdminData } from "@/hooks/useAdminData";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
