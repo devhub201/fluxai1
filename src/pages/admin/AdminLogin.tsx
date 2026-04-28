@@ -1,36 +1,25 @@
-import { useEffect, useState } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
-import { Lock, Mail, Zap, ShieldAlert } from "lucide-react";
-import { ADMIN_EMAIL, isAdminLoggedIn, setSession } from "@/lib/adminStore";
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { ShieldAlert, Zap, LogIn } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { ADMIN_EMAIL } from "@/lib/adminStore";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 export default function AdminLogin() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [denied, setDenied] = useState(false);
+  const { user, loading } = useAuth();
+
+  const isAdmin = user?.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
 
   useEffect(() => {
-    if (isAdminLoggedIn()) navigate("/admin", { replace: true });
-  }, [navigate]);
+    if (!loading && isAdmin) navigate("/admin", { replace: true });
+  }, [loading, isAdmin, navigate]);
 
-  if (isAdminLoggedIn()) return <Navigate to="/admin" replace />;
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setDenied(false);
-    if (email.trim().toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
-      setDenied(true);
-      toast.error("Access Denied");
-      return;
-    }
-    if (password.length < 1) {
-      toast.error("Enter a password");
-      return;
-    }
-    setSession({ email: ADMIN_EMAIL, loggedInAt: Date.now() });
-    toast.success("Welcome, Admin");
-    navigate("/admin", { replace: true });
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    toast.success("Signed out");
+    navigate("/signin", { replace: true });
   };
 
   return (
@@ -40,41 +29,46 @@ export default function AdminLogin() {
           <div className="h-12 w-12 rounded-2xl bg-primary/15 border border-primary/40 flex items-center justify-center mb-3">
             <Zap className="h-6 w-6 text-primary fill-primary" />
           </div>
-          <h1 className="text-2xl font-bold">Fluxa AI <span className="text-primary">Admin</span></h1>
-          <p className="text-xs text-muted-foreground mt-1">Sign in with the admin email to continue.</p>
+          <h1 className="text-2xl font-bold">
+            Fluxa AI <span className="text-primary">Admin</span>
+          </h1>
+          <p className="text-xs text-muted-foreground mt-1">
+            Admin access is restricted to the authorized account.
+          </p>
         </div>
 
-        {denied && (
-          <div className="mb-4 rounded-xl border border-destructive/40 bg-destructive/10 text-destructive text-sm p-3 flex items-center gap-2">
-            <ShieldAlert className="h-4 w-4" /> Access Denied
-          </div>
+        {!user ? (
+          <>
+            <div className="mb-4 rounded-xl border border-border bg-surface-2/60 text-sm p-3 text-muted-foreground">
+              You must be signed in with the admin account to continue.
+            </div>
+            <button
+              onClick={() => navigate("/signin", { state: { from: { pathname: "/admin" } } })}
+              className="btn-primary inline-flex items-center justify-center gap-2"
+            >
+              <LogIn className="h-4 w-4" /> Sign in
+            </button>
+          </>
+        ) : (
+          <>
+            <div className="mb-4 rounded-xl border border-destructive/40 bg-destructive/10 text-destructive text-sm p-3 flex items-start gap-2">
+              <ShieldAlert className="h-4 w-4 mt-0.5 shrink-0" />
+              <div>
+                <div className="font-semibold">Access Denied</div>
+                <div className="text-xs opacity-90 mt-1">
+                  Signed in as <span className="font-mono">{user.email}</span>. Only the admin
+                  account can access this panel.
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={handleSignOut}
+              className="btn-primary"
+            >
+              Sign out & switch account
+            </button>
+          </>
         )}
-
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <div className="relative">
-            <Mail className="field-icon h-4 w-4" />
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Admin email"
-              className="field"
-            />
-          </div>
-          <div className="relative">
-            <Lock className="field-icon h-4 w-4" />
-            <input
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Password"
-              className="field"
-            />
-          </div>
-          <button type="submit" className="btn-primary">Sign in to Admin</button>
-        </form>
 
         <button
           onClick={() => navigate("/chat")}

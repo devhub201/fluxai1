@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { getMetrics, setSession } from "@/lib/adminStore";
 import { useAdminStore } from "@/hooks/useAdminStore";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
 const nav = [
@@ -32,16 +33,20 @@ const nav = [
 export const AdminShell = () => {
   useAdminStore();
   const navigate = useNavigate();
+  const { user, signOut } = useAuth();
   const [open, setOpen] = useState(false);
   const m = getMetrics();
 
   useEffect(() => setOpen(false), [navigate]);
 
-  const logout = () => {
+  const logout = async () => {
     setSession(null);
+    await signOut();
     toast.success("Logged out");
-    navigate("/admin/login", { replace: true });
+    navigate("/signin", { replace: true });
   };
+
+  const adminInitial = (user?.email?.[0] || "A").toUpperCase();
 
   return (
     <div className="h-screen w-full flex bg-background overflow-hidden">
@@ -133,10 +138,10 @@ export const AdminShell = () => {
             <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center">3</span>
           </button>
           <div className="hidden sm:flex items-center gap-2 pl-2 border-l border-border">
-            <div className="h-8 w-8 rounded-full bg-primary/15 border border-primary/30 flex items-center justify-center text-xs font-bold text-primary">A</div>
-            <div className="leading-tight">
-              <div className="text-sm font-semibold">Admin</div>
-              <div className="text-[10px] text-muted-foreground">Super Admin</div>
+            <div className="h-8 w-8 rounded-full bg-primary/15 border border-primary/30 flex items-center justify-center text-xs font-bold text-primary">{adminInitial}</div>
+            <div className="leading-tight max-w-[160px]">
+              <div className="text-sm font-semibold truncate">Admin</div>
+              <div className="text-[10px] text-muted-foreground truncate">{user?.email ?? "Super Admin"}</div>
             </div>
           </div>
         </div>
