@@ -36,7 +36,7 @@ export const AdminShell = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const [open, setOpen] = useState(false);
-  const m = getMetrics();
+  const { users, messages } = useAdminData();
 
   useEffect(() => setOpen(false), [navigate]);
 
