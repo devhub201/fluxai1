@@ -132,7 +132,7 @@ export const AdminShell = () => {
           </div>
           <div className="flex-1 md:hidden" />
           <span className="hidden sm:inline-flex items-center gap-1 text-xs font-semibold text-primary border border-primary/30 bg-primary/10 rounded-full px-3 py-1.5">
-            <Zap className="h-3.5 w-3.5 fill-primary" /> {m.totalCredits.toLocaleString()} Credits
+            <Zap className="h-3.5 w-3.5 fill-primary" /> {users.length} users · {messages.length} msgs
           </span>
           <button className="relative h-9 w-9 rounded-lg border border-border flex items-center justify-center text-muted-foreground hover:text-foreground">
             <Bell className="h-4 w-4" />
