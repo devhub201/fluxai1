@@ -1,11 +1,13 @@
-import { ADMIN_EMAIL, getSession, setSession } from "@/lib/adminStore";
 import { LogOut, Shield } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
+import { ADMIN_EMAIL } from "@/lib/adminStore";
 
 export default function AdminSettings() {
   const navigate = useNavigate();
-  const session = getSession();
+  const { user, signOut } = useAuth();
+
   return (
     <div className="p-4 sm:p-6 space-y-4 max-w-2xl">
       <header>
@@ -20,19 +22,17 @@ export default function AdminSettings() {
           </div>
           <div>
             <div className="text-sm font-semibold">Admin Account</div>
-            <div className="text-xs text-muted-foreground">{ADMIN_EMAIL}</div>
+            <div className="text-xs text-muted-foreground">{user?.email ?? ADMIN_EMAIL}</div>
           </div>
         </div>
-        {session && (
-          <div className="text-xs text-muted-foreground">
-            Logged in: {new Date(session.loggedInAt).toLocaleString()}
-          </div>
-        )}
+        <div className="text-xs text-muted-foreground">
+          User ID: <span className="font-mono">{user?.id ?? "—"}</span>
+        </div>
         <button
-          onClick={() => {
-            setSession(null);
+          onClick={async () => {
+            await signOut();
             toast.success("Logged out");
-            navigate("/admin/login", { replace: true });
+            navigate("/signin", { replace: true });
           }}
           className="inline-flex items-center gap-2 h-10 px-4 rounded-xl border border-destructive/40 text-destructive hover:bg-destructive/10 text-sm"
         >
