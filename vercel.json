@@ -1,0 +1,9 @@
+{
+  "redirects": [
+    {
+      "source": "/",
+      "destination": "https://fluxai1.lovable.app",
+      "permanent": true
+    }
+  ]
+}
