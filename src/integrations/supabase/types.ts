@@ -62,6 +62,33 @@ export type Database = {
         }
         Relationships: []
       }
+      credit_grants: {
+        Row: {
+          amount: number
+          created_at: string
+          email: string
+          granted_by: string | null
+          id: string
+          note: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          email: string
+          granted_by?: string | null
+          id?: string
+          note?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          email?: string
+          granted_by?: string | null
+          id?: string
+          note?: string | null
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           chat_id: string
@@ -121,6 +148,36 @@ export type Database = {
         }
         Relationships: []
       }
+      user_credits: {
+        Row: {
+          balance: number
+          created_at: string
+          email: string
+          granted_total: number
+          id: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          email: string
+          granted_total?: number
+          id?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          email?: string
+          granted_total?: number
+          id?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -147,6 +204,25 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_grant_credits: {
+        Args: { _amount: number; _email: string; _note?: string }
+        Returns: {
+          balance: number
+          created_at: string
+          email: string
+          granted_total: number
+          id: string
+          updated_at: string
+          user_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "user_credits"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      get_my_credits: { Args: never; Returns: number }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
