@@ -25,8 +25,9 @@ export default function ToolPage() {
 
   const Icon = tool.icon;
 
-  const handleUse = () => {
-    if (spend(tool.credits)) {
+  const handleUse = async () => {
+    const ok = await spend(tool.credits);
+    if (ok) {
       addLog({ type: "tool", message: `Used ${tool.name}`, amount: tool.credits });
       setUnlocked(true);
     }
