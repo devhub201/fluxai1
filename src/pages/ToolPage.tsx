@@ -346,6 +346,11 @@ export default function ToolPage() {
                     <Download className="h-3.5 w-3.5" /> Download
                   </button>
                 )}
+                {!imageUrl && (output || generatedFiles.length > 0) && (
+                  <button onClick={handleDownloadOutput} className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground border border-border/60 rounded-lg px-2.5 py-1">
+                    <Download className="h-3.5 w-3.5" /> {generatedFiles.length > 0 ? "ZIP" : "File"}
+                  </button>
+                )}
                 {hasOutput && (
                   <button onClick={handleClear} className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground border border-border/60 rounded-lg px-2.5 py-1">
                     <Trash2 className="h-3.5 w-3.5" /> Clear
@@ -385,16 +390,34 @@ export default function ToolPage() {
               )}
 
               {!loading && isWebsite && previewHtml && websiteView === "preview" && (
-                <iframe
-                  title="Website preview"
-                  srcDoc={previewHtml}
-                  className="w-full h-[520px] rounded-lg border border-border bg-white"
-                  sandbox="allow-scripts"
-                />
+                <div className="space-y-3">
+                  <iframe
+                    title="Website preview"
+                    srcDoc={previewHtml}
+                    className="w-full h-[520px] rounded-lg border border-border bg-white"
+                    sandbox="allow-scripts"
+                  />
+                  {generatedFiles.length > 0 && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {generatedFiles.map((file) => (
+                        <div key={file.path} className="rounded-lg border border-border/60 bg-background/50 px-3 py-2 text-xs text-muted-foreground truncate">
+                          {file.path}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               )}
 
-              {!loading && isWebsite && previewHtml && websiteView === "code" && (
-                <CodeBlock language="html" value={previewHtml} />
+              {!loading && isWebsite && websiteView === "code" && (generatedFiles.length > 0 || previewHtml) && (
+                <div className="space-y-3">
+                  {(generatedFiles.length > 0 ? generatedFiles : [{ path: "preview.html", content: previewHtml ?? "" }]).map((file) => (
+                    <div key={file.path}>
+                      <div className="mb-1 text-xs text-muted-foreground">{file.path}</div>
+                      <CodeBlock language={file.path.split(".").pop() ?? "txt"} value={file.content} />
+                    </div>
+                  ))}
+                </div>
               )}
 
               {!loading && output && !imageUrl && !(isWebsite && previewHtml) && (
