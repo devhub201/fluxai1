@@ -8,12 +8,15 @@ const DAILY_AMOUNT = 100;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 type State = { credits: number; lastClaim: number };
+type CreditRow = { id: string; balance: number };
 
 const read = (): State => {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) return JSON.parse(raw);
-  } catch {}
+  } catch {
+    localStorage.removeItem(STORAGE_KEY);
+  }
   return { credits: DAILY_AMOUNT, lastClaim: Date.now() };
 };
 
@@ -60,8 +63,9 @@ const fetchBonus = async () => {
     .order("updated_at", { ascending: false })
     .limit(1)
     .maybeSingle();
-  bonusRowId = (data as any)?.id ?? null;
-  bonusCurrent = Number((data as any)?.balance ?? 0);
+  const row = data as CreditRow | null;
+  bonusRowId = row?.id ?? null;
+  bonusCurrent = Number(row?.balance ?? 0);
   bonusListeners.forEach((l) => l(bonusCurrent));
 };
 
