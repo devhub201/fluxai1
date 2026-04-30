@@ -126,5 +126,19 @@ export const useCredits = () => {
     return true;
   }, []);
 
-  return { credits: state.credits + bonus, dailyCredits: state.credits, bonusCredits: bonus, spend };
+  const applySpendResult = useCallback((dailySpent: number, bonusBalance?: number | null) => {
+    checkDailyReset(true);
+    const safeDailySpend = Math.max(0, Math.min(Number(dailySpent) || 0, current.credits));
+    if (safeDailySpend > 0) {
+      setState({ ...current, credits: current.credits - safeDailySpend });
+    }
+    if (typeof bonusBalance === "number") {
+      bonusCurrent = Math.max(0, bonusBalance);
+      bonusListeners.forEach((l) => l(bonusCurrent));
+    } else {
+      fetchBonus();
+    }
+  }, []);
+
+  return { credits: state.credits + bonus, dailyCredits: state.credits, bonusCredits: bonus, spend, applySpendResult };
 };
