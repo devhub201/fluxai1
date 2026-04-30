@@ -231,6 +231,7 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: never; Returns: boolean }
+      spend_my_credits: { Args: { _amount: number }; Returns: number }
     }
     Enums: {
       app_role: "admin" | "user"
