@@ -97,12 +97,13 @@ export default function ToolPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const tool = getTool(id ?? "");
-  const { credits, spend } = useCredits();
+  const { credits, dailyCredits, applySpendResult } = useCredits();
   const [prompt, setPrompt] = useState("");
   const [language, setLanguage] = useState("JavaScript");
   const [loading, setLoading] = useState(false);
   const [output, setOutput] = useState<string>("");
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [generatedFiles, setGeneratedFiles] = useState<GeneratedFile[]>([]);
   const [copiedAll, setCopiedAll] = useState(false);
   const [websiteView, setWebsiteView] = useState<"preview" | "code">("preview");
 
@@ -124,12 +125,15 @@ export default function ToolPage() {
 
   // Extract HTML for website builder
   const previewHtml = useMemo(() => {
-    if (!isWebsite || !output) return null;
+    if (!isWebsite) return null;
+    const previewFile = generatedFiles.find((file) => file.path.toLowerCase().endsWith("preview.html") || file.path.toLowerCase().endsWith("index.html"));
+    if (previewFile?.content) return previewFile.content;
+    if (!output) return null;
     const m = output.match(/```html\s*([\s\S]*?)```/i);
     if (m) return m[1];
     if (output.trim().startsWith("<")) return output;
     return null;
-  }, [isWebsite, output]);
+  }, [generatedFiles, isWebsite, output]);
 
   const handleGenerate = async () => {
     if (!prompt.trim()) {
