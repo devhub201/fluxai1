@@ -2,12 +2,22 @@ import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Star, Zap, Loader2, Download, Copy, Check, Sparkles, Eye, Code as CodeIcon, Trash2 } from "lucide-react";
 import { getTool } from "@/lib/tools";
 import { useCredits } from "@/hooks/useCredits";
-import { useState, useMemo } from "react";
+import { useState, useMemo, type HTMLAttributes, type ReactNode } from "react";
 import { addLog } from "@/lib/adminStore";
 import { supabase } from "@/integrations/supabase/client";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { toast } from "sonner";
+import JSZip from "jszip";
+
+type GeneratedFile = { path: string; content: string };
+type ToolRunResponse = {
+  text?: string;
+  imageUrl?: string | null;
+  files?: GeneratedFile[] | null;
+  credits?: { dailySpent?: number; bonusBalance?: number | null };
+  error?: string;
+};
 
 const LANGUAGES = ["JavaScript", "TypeScript", "Python", "Java", "C++", "Go", "Rust", "PHP", "Ruby", "Swift", "HTML", "CSS", "SQL"];
 
@@ -25,12 +35,46 @@ const PLACEHOLDERS: Record<string, string> = {
 const SUGGESTIONS: Record<string, string[]> = {
   "code-generator": ["Debounce hook in React", "REST API in Express with auth", "Binary search in Python"],
   "ai-image-generator": ["Cyberpunk samurai, neon rain", "Minimal product shot, soft light", "Fantasy castle at sunset"],
-  "website-builder": ["SaaS landing page", "Portfolio for a designer", "Restaurant one-pager"],
+  "website-builder": ["Full SaaS with auth pages and API", "Portfolio with CMS backend", "Restaurant site with booking API"],
   "script-writer": ["YouTube short on AI tools", "30s product ad", "Podcast intro script"],
   "prompt-generator": ["Midjourney art prompts", "ChatGPT writing prompts", "Code review prompts"],
   "text-summarizer": ["Summarize a research paper", "TL;DR for a news article", "Meeting notes recap"],
   "email-writer": ["Cold outreach email", "Follow-up after demo", "Apology email to client"],
   "marketing-copy": ["Instagram caption", "Landing page hero copy", "Product launch tweet"],
+};
+
+const EXT_BY_LANGUAGE: Record<string, string> = {
+  JavaScript: "js",
+  TypeScript: "ts",
+  Python: "py",
+  Java: "java",
+  "C++": "cpp",
+  Go: "go",
+  Rust: "rs",
+  PHP: "php",
+  Ruby: "rb",
+  Swift: "swift",
+  HTML: "html",
+  CSS: "css",
+  SQL: "sql",
+};
+
+const slugify = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "fluxa-output";
+
+const stripFence = (value: string) => {
+  const match = value.match(/^```[\w-]*\s*([\s\S]*?)```$/i);
+  return match ? match[1].trim() : value.trim();
+};
+
+const downloadBlob = (blob: Blob, filename: string) => {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 };
 
 function CodeBlock({ language, value }: { language: string; value: string }) {
@@ -60,16 +104,34 @@ export default function ToolPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const tool = getTool(id ?? "");
-  const { credits, spend } = useCredits();
+  const { credits, dailyCredits, applySpendResult } = useCredits();
   const [prompt, setPrompt] = useState("");
   const [language, setLanguage] = useState("JavaScript");
   const [loading, setLoading] = useState(false);
   const [output, setOutput] = useState<string>("");
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [generatedFiles, setGeneratedFiles] = useState<GeneratedFile[]>([]);
   const [copiedAll, setCopiedAll] = useState(false);
   const [websiteView, setWebsiteView] = useState<"preview" | "code">("preview");
 
-  if (!tool) {
+  const Icon = tool?.icon;
+  const isImage = tool?.id === "ai-image-generator";
+  const isWebsite = tool?.id === "website-builder";
+  const isCode = tool?.id === "code-generator";
+
+  // Extract HTML for website builder
+  const previewHtml = useMemo(() => {
+    if (!isWebsite) return null;
+    const previewFile = generatedFiles.find((file) => file.path.toLowerCase().endsWith("preview.html") || file.path.toLowerCase().endsWith("index.html"));
+    if (previewFile?.content) return previewFile.content;
+    if (!output) return null;
+    const m = output.match(/```html\s*([\s\S]*?)```/i);
+    if (m) return m[1];
+    if (output.trim().startsWith("<")) return output;
+    return null;
+  }, [generatedFiles, isWebsite, output]);
+
+  if (!tool || !Icon) {
     return (
       <div className="h-full flex items-center justify-center p-6">
         <div className="text-center space-y-3">
@@ -79,20 +141,6 @@ export default function ToolPage() {
       </div>
     );
   }
-
-  const Icon = tool.icon;
-  const isImage = tool.id === "ai-image-generator";
-  const isWebsite = tool.id === "website-builder";
-  const isCode = tool.id === "code-generator";
-
-  // Extract HTML for website builder
-  const previewHtml = useMemo(() => {
-    if (!isWebsite || !output) return null;
-    const m = output.match(/```html\s*([\s\S]*?)```/i);
-    if (m) return m[1];
-    if (output.trim().startsWith("<")) return output;
-    return null;
-  }, [isWebsite, output]);
 
   const handleGenerate = async () => {
     if (!prompt.trim()) {
@@ -106,25 +154,23 @@ export default function ToolPage() {
     setLoading(true);
     setOutput("");
     setImageUrl(null);
+    setGeneratedFiles([]);
     try {
-      const { data, error } = await supabase.functions.invoke("tool-run", {
-        body: { toolId: tool.id, prompt, options: { language } },
+      const { data, error } = await supabase.functions.invoke<ToolRunResponse>("tool-run", {
+        body: { toolId: tool.id, prompt, options: { language }, creditCost: tool.credits, dailyCredits },
       });
       if (error) throw error;
-      if ((data as any)?.error) throw new Error((data as any).error);
+      if (data?.error) throw new Error(data.error);
 
-      const ok = await spend(tool.credits);
-      if (!ok) {
-        setLoading(false);
-        return;
-      }
+      applySpendResult(Number(data?.credits?.dailySpent ?? 0), data?.credits?.bonusBalance ?? null);
       addLog({ type: "tool", message: `Used ${tool.name}`, amount: tool.credits });
 
-      setOutput((data as any)?.text ?? "");
-      setImageUrl((data as any)?.imageUrl ?? null);
+      setOutput(data?.text ?? "");
+      setImageUrl(data?.imageUrl ?? null);
+      setGeneratedFiles(Array.isArray(data?.files) ? data.files : []);
       toast.success("Generated!");
-    } catch (e: any) {
-      toast.error(e?.message ?? "Generation failed");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Generation failed");
     } finally {
       setLoading(false);
     }
@@ -145,12 +191,29 @@ export default function ToolPage() {
     a.click();
   };
 
+  const handleDownloadOutput = async () => {
+    if (generatedFiles.length > 0) {
+      const zip = new JSZip();
+      generatedFiles.forEach((file) => zip.file(file.path.replace(/^\/+/, ""), file.content));
+      const blob = await zip.generateAsync({ type: "blob" });
+      downloadBlob(blob, `${slugify(tool.name)}-${Date.now()}.zip`);
+      toast.success("Project ZIP downloaded");
+      return;
+    }
+    if (!output) return;
+    const ext = isCode ? EXT_BY_LANGUAGE[language] ?? "txt" : "md";
+    const content = isCode ? stripFence(output) : output;
+    downloadBlob(new Blob([content], { type: "text/plain;charset=utf-8" }), `${slugify(tool.name)}-${Date.now()}.${ext}`);
+    toast.success("File downloaded");
+  };
+
   const handleClear = () => {
     setOutput("");
     setImageUrl(null);
+    setGeneratedFiles([]);
   };
 
-  const hasOutput = !!output || !!imageUrl;
+  const hasOutput = !!output || !!imageUrl || generatedFiles.length > 0;
 
   return (
     <div className="h-full overflow-y-auto">
@@ -290,6 +353,11 @@ export default function ToolPage() {
                     <Download className="h-3.5 w-3.5" /> Download
                   </button>
                 )}
+                {!imageUrl && (output || generatedFiles.length > 0) && (
+                  <button onClick={handleDownloadOutput} className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground border border-border/60 rounded-lg px-2.5 py-1">
+                    <Download className="h-3.5 w-3.5" /> {generatedFiles.length > 0 ? "ZIP" : "File"}
+                  </button>
+                )}
                 {hasOutput && (
                   <button onClick={handleClear} className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground border border-border/60 rounded-lg px-2.5 py-1">
                     <Trash2 className="h-3.5 w-3.5" /> Clear
@@ -329,16 +397,34 @@ export default function ToolPage() {
               )}
 
               {!loading && isWebsite && previewHtml && websiteView === "preview" && (
-                <iframe
-                  title="Website preview"
-                  srcDoc={previewHtml}
-                  className="w-full h-[520px] rounded-lg border border-border bg-white"
-                  sandbox="allow-scripts"
-                />
+                <div className="space-y-3">
+                  <iframe
+                    title="Website preview"
+                    srcDoc={previewHtml}
+                    className="w-full h-[520px] rounded-lg border border-border bg-white"
+                    sandbox="allow-scripts"
+                  />
+                  {generatedFiles.length > 0 && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {generatedFiles.map((file) => (
+                        <div key={file.path} className="rounded-lg border border-border/60 bg-background/50 px-3 py-2 text-xs text-muted-foreground truncate">
+                          {file.path}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               )}
 
-              {!loading && isWebsite && previewHtml && websiteView === "code" && (
-                <CodeBlock language="html" value={previewHtml} />
+              {!loading && isWebsite && websiteView === "code" && (generatedFiles.length > 0 || previewHtml) && (
+                <div className="space-y-3">
+                  {(generatedFiles.length > 0 ? generatedFiles : [{ path: "preview.html", content: previewHtml ?? "" }]).map((file) => (
+                    <div key={file.path}>
+                      <div className="mb-1 text-xs text-muted-foreground">{file.path}</div>
+                      <CodeBlock language={file.path.split(".").pop() ?? "txt"} value={file.content} />
+                    </div>
+                  ))}
+                </div>
               )}
 
               {!loading && output && !imageUrl && !(isWebsite && previewHtml) && (
@@ -346,7 +432,7 @@ export default function ToolPage() {
                   <ReactMarkdown
                     remarkPlugins={[remarkGfm]}
                     components={{
-                      code({ inline, className, children, ...props }: any) {
+                      code({ inline, className, children, ...props }: HTMLAttributes<HTMLElement> & { inline?: boolean; children?: ReactNode }) {
                         const match = /language-(\w+)/.exec(className || "");
                         const value = String(children).replace(/\n$/, "");
                         if (!inline && (match || value.includes("\n"))) {

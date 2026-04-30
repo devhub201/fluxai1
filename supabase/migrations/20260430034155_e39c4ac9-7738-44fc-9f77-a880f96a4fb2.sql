@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.spend_my_credits(bigint) FROM PUBLIC, anon, authenticated;
