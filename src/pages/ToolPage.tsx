@@ -147,22 +147,20 @@ export default function ToolPage() {
     setLoading(true);
     setOutput("");
     setImageUrl(null);
+    setGeneratedFiles([]);
     try {
       const { data, error } = await supabase.functions.invoke("tool-run", {
-        body: { toolId: tool.id, prompt, options: { language } },
+        body: { toolId: tool.id, prompt, options: { language }, creditCost: tool.credits, dailyCredits },
       });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
 
-      const ok = await spend(tool.credits);
-      if (!ok) {
-        setLoading(false);
-        return;
-      }
+      applySpendResult(Number((data as any)?.credits?.dailySpent ?? 0), (data as any)?.credits?.bonusBalance ?? null);
       addLog({ type: "tool", message: `Used ${tool.name}`, amount: tool.credits });
 
       setOutput((data as any)?.text ?? "");
       setImageUrl((data as any)?.imageUrl ?? null);
+      setGeneratedFiles(Array.isArray((data as any)?.files) ? (data as any).files : []);
       toast.success("Generated!");
     } catch (e: any) {
       toast.error(e?.message ?? "Generation failed");
@@ -186,12 +184,29 @@ export default function ToolPage() {
     a.click();
   };
 
+  const handleDownloadOutput = async () => {
+    if (generatedFiles.length > 0) {
+      const zip = new JSZip();
+      generatedFiles.forEach((file) => zip.file(file.path.replace(/^\/+/, ""), file.content));
+      const blob = await zip.generateAsync({ type: "blob" });
+      downloadBlob(blob, `${slugify(tool.name)}-${Date.now()}.zip`);
+      toast.success("Project ZIP downloaded");
+      return;
+    }
+    if (!output) return;
+    const ext = isCode ? EXT_BY_LANGUAGE[language] ?? "txt" : "md";
+    const content = isCode ? stripFence(output) : output;
+    downloadBlob(new Blob([content], { type: "text/plain;charset=utf-8" }), `${slugify(tool.name)}-${Date.now()}.${ext}`);
+    toast.success("File downloaded");
+  };
+
   const handleClear = () => {
     setOutput("");
     setImageUrl(null);
+    setGeneratedFiles([]);
   };
 
-  const hasOutput = !!output || !!imageUrl;
+  const hasOutput = !!output || !!imageUrl || generatedFiles.length > 0;
 
   return (
     <div className="h-full overflow-y-auto">
