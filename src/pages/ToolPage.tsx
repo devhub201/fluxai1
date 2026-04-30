@@ -156,21 +156,21 @@ export default function ToolPage() {
     setImageUrl(null);
     setGeneratedFiles([]);
     try {
-      const { data, error } = await supabase.functions.invoke("tool-run", {
+      const { data, error } = await supabase.functions.invoke<ToolRunResponse>("tool-run", {
         body: { toolId: tool.id, prompt, options: { language }, creditCost: tool.credits, dailyCredits },
       });
       if (error) throw error;
-      if ((data as any)?.error) throw new Error((data as any).error);
+      if (data?.error) throw new Error(data.error);
 
-      applySpendResult(Number((data as any)?.credits?.dailySpent ?? 0), (data as any)?.credits?.bonusBalance ?? null);
+      applySpendResult(Number(data?.credits?.dailySpent ?? 0), data?.credits?.bonusBalance ?? null);
       addLog({ type: "tool", message: `Used ${tool.name}`, amount: tool.credits });
 
-      setOutput((data as any)?.text ?? "");
-      setImageUrl((data as any)?.imageUrl ?? null);
-      setGeneratedFiles(Array.isArray((data as any)?.files) ? (data as any).files : []);
+      setOutput(data?.text ?? "");
+      setImageUrl(data?.imageUrl ?? null);
+      setGeneratedFiles(Array.isArray(data?.files) ? data.files : []);
       toast.success("Generated!");
-    } catch (e: any) {
-      toast.error(e?.message ?? "Generation failed");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Generation failed");
     } finally {
       setLoading(false);
     }
@@ -432,7 +432,7 @@ export default function ToolPage() {
                   <ReactMarkdown
                     remarkPlugins={[remarkGfm]}
                     components={{
-                      code({ inline, className, children, ...props }: any) {
+                      code({ inline, className, children, ...props }: HTMLAttributes<HTMLElement> & { inline?: boolean; children?: ReactNode }) {
                         const match = /language-(\w+)/.exec(className || "");
                         const value = String(children).replace(/\n$/, "");
                         if (!inline && (match || value.includes("\n"))) {
