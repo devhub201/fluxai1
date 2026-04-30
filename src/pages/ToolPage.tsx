@@ -2,7 +2,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Star, Zap, Loader2, Download, Copy, Check, Sparkles, Eye, Code as CodeIcon, Trash2 } from "lucide-react";
 import { getTool } from "@/lib/tools";
 import { useCredits } from "@/hooks/useCredits";
-import { useState, useMemo } from "react";
+import { useState, useMemo, type HTMLAttributes, type ReactNode } from "react";
 import { addLog } from "@/lib/adminStore";
 import { supabase } from "@/integrations/supabase/client";
 import ReactMarkdown from "react-markdown";
@@ -11,6 +11,13 @@ import { toast } from "sonner";
 import JSZip from "jszip";
 
 type GeneratedFile = { path: string; content: string };
+type ToolRunResponse = {
+  text?: string;
+  imageUrl?: string | null;
+  files?: GeneratedFile[] | null;
+  credits?: { dailySpent?: number; bonusBalance?: number | null };
+  error?: string;
+};
 
 const LANGUAGES = ["JavaScript", "TypeScript", "Python", "Java", "C++", "Go", "Rust", "PHP", "Ruby", "Swift", "HTML", "CSS", "SQL"];
 
@@ -107,21 +114,10 @@ export default function ToolPage() {
   const [copiedAll, setCopiedAll] = useState(false);
   const [websiteView, setWebsiteView] = useState<"preview" | "code">("preview");
 
-  if (!tool) {
-    return (
-      <div className="h-full flex items-center justify-center p-6">
-        <div className="text-center space-y-3">
-          <p className="text-muted-foreground">Tool not found.</p>
-          <button onClick={() => navigate("/store")} className="text-primary text-sm">Back to Store</button>
-        </div>
-      </div>
-    );
-  }
-
-  const Icon = tool.icon;
-  const isImage = tool.id === "ai-image-generator";
-  const isWebsite = tool.id === "website-builder";
-  const isCode = tool.id === "code-generator";
+  const Icon = tool?.icon;
+  const isImage = tool?.id === "ai-image-generator";
+  const isWebsite = tool?.id === "website-builder";
+  const isCode = tool?.id === "code-generator";
 
   // Extract HTML for website builder
   const previewHtml = useMemo(() => {
@@ -134,6 +130,17 @@ export default function ToolPage() {
     if (output.trim().startsWith("<")) return output;
     return null;
   }, [generatedFiles, isWebsite, output]);
+
+  if (!tool || !Icon) {
+    return (
+      <div className="h-full flex items-center justify-center p-6">
+        <div className="text-center space-y-3">
+          <p className="text-muted-foreground">Tool not found.</p>
+          <button onClick={() => navigate("/store")} className="text-primary text-sm">Back to Store</button>
+        </div>
+      </div>
+    );
+  }
 
   const handleGenerate = async () => {
     if (!prompt.trim()) {
