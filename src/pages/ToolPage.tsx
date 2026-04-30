@@ -8,6 +8,9 @@ import { supabase } from "@/integrations/supabase/client";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { toast } from "sonner";
+import JSZip from "jszip";
+
+type GeneratedFile = { path: string; content: string };
 
 const LANGUAGES = ["JavaScript", "TypeScript", "Python", "Java", "C++", "Go", "Rust", "PHP", "Ruby", "Swift", "HTML", "CSS", "SQL"];
 
@@ -25,12 +28,46 @@ const PLACEHOLDERS: Record<string, string> = {
 const SUGGESTIONS: Record<string, string[]> = {
   "code-generator": ["Debounce hook in React", "REST API in Express with auth", "Binary search in Python"],
   "ai-image-generator": ["Cyberpunk samurai, neon rain", "Minimal product shot, soft light", "Fantasy castle at sunset"],
-  "website-builder": ["SaaS landing page", "Portfolio for a designer", "Restaurant one-pager"],
+  "website-builder": ["Full SaaS with auth pages and API", "Portfolio with CMS backend", "Restaurant site with booking API"],
   "script-writer": ["YouTube short on AI tools", "30s product ad", "Podcast intro script"],
   "prompt-generator": ["Midjourney art prompts", "ChatGPT writing prompts", "Code review prompts"],
   "text-summarizer": ["Summarize a research paper", "TL;DR for a news article", "Meeting notes recap"],
   "email-writer": ["Cold outreach email", "Follow-up after demo", "Apology email to client"],
   "marketing-copy": ["Instagram caption", "Landing page hero copy", "Product launch tweet"],
+};
+
+const EXT_BY_LANGUAGE: Record<string, string> = {
+  JavaScript: "js",
+  TypeScript: "ts",
+  Python: "py",
+  Java: "java",
+  "C++": "cpp",
+  Go: "go",
+  Rust: "rs",
+  PHP: "php",
+  Ruby: "rb",
+  Swift: "swift",
+  HTML: "html",
+  CSS: "css",
+  SQL: "sql",
+};
+
+const slugify = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "fluxa-output";
+
+const stripFence = (value: string) => {
+  const match = value.match(/^```[\w-]*\s*([\s\S]*?)```$/i);
+  return match ? match[1].trim() : value.trim();
+};
+
+const downloadBlob = (blob: Blob, filename: string) => {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 };
 
 function CodeBlock({ language, value }: { language: string; value: string }) {
