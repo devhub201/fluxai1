@@ -32,47 +32,43 @@ const jsonResponse = (body: Record<string, unknown>, status = 200) =>
 
 const parseWebsiteProject = (message: any): { summary: string; files: ProjectFile[] } => {
   const args = message?.tool_calls?.[0]?.function?.arguments;
-  if (args) {
+  const tryParse = (raw: any) => {
+    if (!raw) return null;
     try {
-      const parsed = JSON.parse(args);
+      const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
       const files = Array.isArray(parsed.files) ? parsed.files : [];
       return {
         summary: String(parsed.summary ?? "Your website project is ready."),
         files: files
           .filter((file: any) => file?.path && typeof file?.content === "string")
-          .slice(0, 16)
+          .slice(0, 40)
           .map((file: any) => ({ path: String(file.path), content: String(file.content) })),
       };
-    } catch (error) {
-      console.error("Website tool-call parse error", error);
+    } catch (e) {
+      console.error("website parse error", e);
+      return null;
     }
-  }
+  };
+
+  const fromTool = tryParse(args);
+  if (fromTool && fromTool.files.length) return fromTool;
 
   const text = String(message?.content ?? "");
-  try {
-    const cleaned = text.replace(/^```json\s*/i, "").replace(/```$/i, "").trim();
-    const parsed = JSON.parse(cleaned);
-    const files = Array.isArray(parsed.files) ? parsed.files : [];
-    return {
-      summary: String(parsed.summary ?? "Your website project is ready."),
-      files: files
-        .filter((file: any) => file?.path && typeof file?.content === "string")
-        .slice(0, 16)
-        .map((file: any) => ({ path: String(file.path), content: String(file.content) })),
-    };
-  } catch {
-    return {
-      summary: "Your website project is ready.",
-      files: [{ path: "preview.html", content: text }],
-    };
-  }
+  const cleaned = text.replace(/^```json\s*/i, "").replace(/```$/i, "").trim();
+  const fromContent = tryParse(cleaned);
+  if (fromContent && fromContent.files.length) return fromContent;
+
+  return {
+    summary: "Your website project is ready.",
+    files: [{ path: "preview.html", content: text || "<h1>Empty project</h1>" }],
+  };
 };
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { toolId, prompt, options, creditCost, dailyCredits } = await req.json();
+    const { toolId, prompt, options, creditCost, dailyCredits, mode } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
@@ -106,6 +102,7 @@ serve(async (req) => {
 
     const isImage = toolId === "ai-image-generator";
     const isWebsite = toolId === "website-builder";
+    const isPro = mode === "pro";
 
     let body: any;
     if (isImage) {
@@ -115,13 +112,27 @@ serve(async (req) => {
         modalities: ["image", "text"],
       };
     } else if (isWebsite) {
+      const websiteModel = isPro ? "google/gemini-2.5-pro" : "google/gemini-3-flash-preview";
       body = {
-        model: "google/gemini-3-flash-preview",
+        model: websiteModel,
         messages: [
           {
             role: "system",
-            content:
-              "You are Fluxa AI Website Builder. Generate a complete multi-file website project from the user's request. Include frontend pages/components/styles and a simple backend/API layer when useful. The project must be practical, runnable, and organized. Always include preview.html as a self-contained responsive preview, package.json, README.md, frontend files under src/, and backend files under server/ or api/. Keep code safe and do not include real secrets.",
+            content: `You are Fluxa AI Website Builder — a senior full-stack engineer. Generate a COMPLETE, production-quality, full-stack web project from the user's request.
+
+CRITICAL RULES:
+- Output 12-30 real, useful files. NEVER fewer than 10.
+- Build BOTH frontend AND backend, plus a database schema if data is involved.
+- Frontend MUST use modern, beautiful, responsive design (Tailwind via CDN is fine for the preview).
+- ALWAYS include a self-contained "preview.html" that uses Tailwind CDN and shows the full landing page with the site's hero, features, and main sections inline (no external file imports). This is what users see in the live preview, so make it look STUNNING.
+- Include multiple real pages (e.g. src/pages/index.tsx, about.tsx, pricing.tsx, contact.tsx, dashboard.tsx).
+- Include a backend (server/index.js or api/*.ts with Express or Hono routes), a database schema (db/schema.sql or prisma/schema.prisma), package.json with real dependencies, README.md with setup instructions, and a .env.example.
+- Use realistic, copy-pasteable code. No "// TODO" stubs. No placeholders like "your code here".
+- Never include real API keys or secrets.
+- Style the preview.html with a dark, modern, premium aesthetic by default (gradients, glass cards, hover effects) unless the user asks otherwise.
+- Make every page visually distinct and content-rich.
+
+Return your response by calling the create_website_project function.`,
           },
           { role: "user", content: prompt },
         ],
@@ -130,15 +141,16 @@ serve(async (req) => {
             type: "function",
             function: {
               name: "create_website_project",
-              description: "Return a complete downloadable website project with multiple files.",
+              description: "Return a complete downloadable full-stack website project with many files.",
               parameters: {
                 type: "object",
                 properties: {
-                  summary: { type: "string" },
+                  summary: { type: "string", description: "1-2 sentence description of what was built." },
+                  title: { type: "string", description: "Short title for the site (used as page title)." },
                   files: {
                     type: "array",
-                    minItems: 6,
-                    maxItems: 16,
+                    minItems: 10,
+                    maxItems: 30,
                     items: {
                       type: "object",
                       properties: {
@@ -149,7 +161,7 @@ serve(async (req) => {
                     },
                   },
                 },
-                required: ["summary", "files"],
+                required: ["summary", "title", "files"],
               },
             },
           },
@@ -162,8 +174,9 @@ serve(async (req) => {
       if (toolId === "code-generator" && options?.language) {
         userContent = `Language: ${options.language}\n\nTask: ${prompt}`;
       }
+      const textModel = isPro ? "google/gemini-2.5-pro" : "google/gemini-3-flash-preview";
       body = {
-        model: "google/gemini-3-flash-preview",
+        model: textModel,
         messages: [
           { role: "system", content: sys },
           { role: "user", content: userContent },
@@ -190,6 +203,18 @@ serve(async (req) => {
     const text: string = msg.content ?? "";
     const imageUrl: string | null = msg.images?.[0]?.image_url?.url ?? null;
     const project = isWebsite ? parseWebsiteProject(msg) : null;
+    const projectTitle = isWebsite
+      ? (() => {
+          try {
+            const args = msg?.tool_calls?.[0]?.function?.arguments;
+            if (args) {
+              const parsed = typeof args === "string" ? JSON.parse(args) : args;
+              if (parsed?.title) return String(parsed.title);
+            }
+          } catch (_) {}
+          return null;
+        })()
+      : null;
 
     let bonusBalance: number | null = null;
     if (bonusToSpend > 0) {
@@ -207,8 +232,10 @@ serve(async (req) => {
 
     return jsonResponse({
       text: isWebsite ? project?.summary ?? "Your website project is ready." : text,
+      title: projectTitle,
       imageUrl,
       files: project?.files ?? null,
+      mode: isPro ? "pro" : "fast",
       credits: { dailySpent: localDaily, bonusSpent: bonusToSpend, bonusBalance },
     });
   } catch (e) {

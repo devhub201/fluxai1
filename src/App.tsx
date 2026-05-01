@@ -29,6 +29,7 @@ import AdminCredits from "./pages/admin/AdminCredits";
 import AdminAnnouncements from "./pages/admin/AdminAnnouncements";
 import AdminLogs from "./pages/admin/AdminLogs";
 import AdminSettings from "./pages/admin/AdminSettings";
+import PublishedSite from "./pages/PublishedSite";
 
 const queryClient = new QueryClient();
 
@@ -41,6 +42,7 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Landing />} />
+            <Route path="/sites/:slug" element={<PublishedSite />} />
             <Route path="/signin" element={<SignIn />} />
             <Route path="/signup" element={<SignUp />} />
             <Route path="/forgot" element={<ForgotPassword />} />

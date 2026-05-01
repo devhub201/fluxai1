@@ -1,5 +1,5 @@
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Star, Zap, Loader2, Download, Copy, Check, Sparkles, Eye, Code as CodeIcon, Trash2 } from "lucide-react";
+import { ArrowLeft, Star, Zap, Loader2, Download, Copy, Check, Sparkles, Eye, Code as CodeIcon, Trash2, Globe, Rocket, Gauge, Brain, ExternalLink } from "lucide-react";
 import { getTool } from "@/lib/tools";
 import { useCredits } from "@/hooks/useCredits";
 import { useState, useMemo, type HTMLAttributes, type ReactNode } from "react";
@@ -9,12 +9,17 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { toast } from "sonner";
 import JSZip from "jszip";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 type GeneratedFile = { path: string; content: string };
 type ToolRunResponse = {
   text?: string;
+  title?: string | null;
   imageUrl?: string | null;
   files?: GeneratedFile[] | null;
+  mode?: string;
   credits?: { dailySpent?: number; bonusBalance?: number | null };
   error?: string;
 };
@@ -113,6 +118,13 @@ export default function ToolPage() {
   const [generatedFiles, setGeneratedFiles] = useState<GeneratedFile[]>([]);
   const [copiedAll, setCopiedAll] = useState(false);
   const [websiteView, setWebsiteView] = useState<"preview" | "code">("preview");
+  const [mode, setMode] = useState<"fast" | "pro">("fast");
+  const [generatedTitle, setGeneratedTitle] = useState<string>("");
+  const [publishOpen, setPublishOpen] = useState(false);
+  const [publishSlug, setPublishSlug] = useState("");
+  const [publishTitle, setPublishTitle] = useState("");
+  const [publishing, setPublishing] = useState(false);
+  const [publishedUrl, setPublishedUrl] = useState<string | null>(null);
 
   const Icon = tool?.icon;
   const isImage = tool?.id === "ai-image-generator";
@@ -155,24 +167,71 @@ export default function ToolPage() {
     setOutput("");
     setImageUrl(null);
     setGeneratedFiles([]);
+    setGeneratedTitle("");
+    setPublishedUrl(null);
     try {
       const { data, error } = await supabase.functions.invoke<ToolRunResponse>("tool-run", {
-        body: { toolId: tool.id, prompt, options: { language }, creditCost: tool.credits, dailyCredits },
+        body: { toolId: tool.id, prompt, options: { language }, creditCost: tool.credits, dailyCredits, mode },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
 
       applySpendResult(Number(data?.credits?.dailySpent ?? 0), data?.credits?.bonusBalance ?? null);
-      addLog({ type: "tool", message: `Used ${tool.name}`, amount: tool.credits });
+      addLog({ type: "tool", message: `Used ${tool.name} (${mode})`, amount: tool.credits });
 
       setOutput(data?.text ?? "");
       setImageUrl(data?.imageUrl ?? null);
       setGeneratedFiles(Array.isArray(data?.files) ? data.files : []);
-      toast.success("Generated!");
+      if (data?.title) setGeneratedTitle(data.title);
+      toast.success(isWebsite ? `Website built with ${mode === "pro" ? "Pro" : "Fast"} mode` : "Generated!");
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "Generation failed");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleOpenPublish = () => {
+    const baseTitle = generatedTitle || prompt.slice(0, 60) || "My Site";
+    setPublishTitle(baseTitle);
+    setPublishSlug(slugify(baseTitle));
+    setPublishedUrl(null);
+    setPublishOpen(true);
+  };
+
+  const handlePublish = async () => {
+    if (!generatedFiles.length) {
+      toast.error("Generate a website first");
+      return;
+    }
+    if (!publishSlug.trim()) {
+      toast.error("Please choose a URL");
+      return;
+    }
+    setPublishing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke<{ ok?: boolean; slug?: string; error?: string }>(
+        "publish-site",
+        {
+          body: {
+            action: "publish",
+            slug: slugify(publishSlug),
+            title: publishTitle || "Untitled Site",
+            files: generatedFiles,
+            prompt,
+            model: mode === "pro" ? "pro" : "fast",
+          },
+        },
+      );
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      const url = `${window.location.origin}/sites/${data?.slug}`;
+      setPublishedUrl(url);
+      toast.success("Published! Site is live.");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Failed to publish");
+    } finally {
+      setPublishing(false);
     }
   };
 
@@ -303,13 +362,36 @@ export default function ToolPage() {
               </div>
             </div>
 
+            {!isImage && (
+              <div className="space-y-1.5">
+                <label className="text-xs text-muted-foreground">AI Mode</label>
+                <div className="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-surface-2 border border-border/60">
+                  <button
+                    onClick={() => setMode("fast")}
+                    className={`h-9 rounded-lg text-[12px] font-medium inline-flex items-center justify-center gap-1.5 transition-all ${mode === "fast" ? "bg-primary text-primary-foreground shadow-[0_0_18px_hsl(var(--primary)/0.4)]" : "text-muted-foreground hover:text-foreground"}`}
+                  >
+                    <Gauge className="h-3.5 w-3.5" /> Fast
+                  </button>
+                  <button
+                    onClick={() => setMode("pro")}
+                    className={`h-9 rounded-lg text-[12px] font-medium inline-flex items-center justify-center gap-1.5 transition-all ${mode === "pro" ? "bg-gradient-to-r from-fuchsia-500 to-primary text-white shadow-[0_0_18px_hsl(var(--primary)/0.5)]" : "text-muted-foreground hover:text-foreground"}`}
+                  >
+                    <Brain className="h-3.5 w-3.5" /> Pro
+                  </button>
+                </div>
+                <p className="text-[10.5px] text-muted-foreground">
+                  {mode === "fast" ? "Fast mode — quick results, lower cost." : "Pro mode — deeper reasoning, higher quality, slower."}
+                </p>
+              </div>
+            )}
+
             <button
               onClick={handleGenerate}
               disabled={loading}
               className="w-full h-12 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 active:scale-[0.99] transition-all inline-flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed shadow-[0_0_24px_hsl(var(--primary)/0.35)]"
             >
               {loading ? (
-                <><Loader2 className="h-4 w-4 animate-spin" /> Generating…</>
+                <><Loader2 className="h-4 w-4 animate-spin" /> {isWebsite ? "Building your site…" : "Generating…"}</>
               ) : (
                 <><Sparkles className="h-4 w-4" /> Generate {isImage ? "Image" : isWebsite ? "Website" : ""}</>
               )}
@@ -356,6 +438,14 @@ export default function ToolPage() {
                 {!imageUrl && (output || generatedFiles.length > 0) && (
                   <button onClick={handleDownloadOutput} className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground border border-border/60 rounded-lg px-2.5 py-1">
                     <Download className="h-3.5 w-3.5" /> {generatedFiles.length > 0 ? "ZIP" : "File"}
+                  </button>
+                )}
+                {isWebsite && generatedFiles.length > 0 && (
+                  <button
+                    onClick={handleOpenPublish}
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-white bg-gradient-to-r from-fuchsia-500 to-primary hover:opacity-90 rounded-lg px-3 py-1.5 shadow-[0_0_18px_hsl(var(--primary)/0.4)]"
+                  >
+                    <Rocket className="h-3.5 w-3.5" /> Publish
                   </button>
                 )}
                 {hasOutput && (
@@ -450,6 +540,76 @@ export default function ToolPage() {
           </div>
         </div>
       </div>
+
+      <Dialog open={publishOpen} onOpenChange={setPublishOpen}>
+        <DialogContent className="bg-card border-border">
+          <DialogHeader>
+            <DialogTitle className="inline-flex items-center gap-2">
+              <Rocket className="h-4 w-4 text-primary" /> Publish your website
+            </DialogTitle>
+            <DialogDescription>
+              Your site will be live instantly at a public Fluxa URL.
+            </DialogDescription>
+          </DialogHeader>
+
+          {publishedUrl ? (
+            <div className="space-y-3">
+              <div className="rounded-xl border border-emerald-400/30 bg-emerald-400/10 p-4 space-y-2">
+                <div className="text-xs uppercase tracking-wider text-emerald-300">Live URL</div>
+                <a
+                  href={publishedUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-primary text-sm font-medium break-all inline-flex items-center gap-1.5 hover:underline"
+                >
+                  {publishedUrl} <ExternalLink className="h-3.5 w-3.5" />
+                </a>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => {
+                    navigator.clipboard.writeText(publishedUrl);
+                    toast.success("URL copied");
+                  }}
+                >
+                  <Copy className="h-3.5 w-3.5" /> Copy URL
+                </Button>
+                <Button className="flex-1" onClick={() => window.open(publishedUrl, "_blank")}>
+                  <Globe className="h-3.5 w-3.5" /> Open Site
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <label className="text-xs text-muted-foreground">Site title</label>
+                <Input value={publishTitle} onChange={(e) => setPublishTitle(e.target.value)} placeholder="My awesome site" />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs text-muted-foreground">Public URL</label>
+                <div className="flex items-center gap-2 rounded-lg border border-border/60 bg-surface-2 px-3 h-10 text-sm">
+                  <span className="text-muted-foreground text-xs truncate">{window.location.host}/sites/</span>
+                  <input
+                    value={publishSlug}
+                    onChange={(e) => setPublishSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-"))}
+                    className="flex-1 bg-transparent outline-none text-sm"
+                    placeholder="my-site"
+                  />
+                </div>
+                <p className="text-[10.5px] text-muted-foreground">Lowercase letters, numbers, and dashes only.</p>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setPublishOpen(false)} disabled={publishing}>Cancel</Button>
+                <Button onClick={handlePublish} disabled={publishing}>
+                  {publishing ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Publishing…</> : <><Rocket className="h-3.5 w-3.5" /> Publish Now</>}
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

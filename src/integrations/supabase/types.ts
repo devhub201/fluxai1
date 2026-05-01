@@ -148,6 +148,45 @@ export type Database = {
         }
         Relationships: []
       }
+      published_sites: {
+        Row: {
+          created_at: string
+          files: Json
+          id: string
+          is_published: boolean
+          model: string | null
+          prompt: string | null
+          slug: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          files?: Json
+          id?: string
+          is_published?: boolean
+          model?: string | null
+          prompt?: string | null
+          slug: string
+          title?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          files?: Json
+          id?: string
+          is_published?: boolean
+          model?: string | null
+          prompt?: string | null
+          slug?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_credits: {
         Row: {
           balance: number
