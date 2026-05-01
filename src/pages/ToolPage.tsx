@@ -1,5 +1,5 @@
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Star, Zap, Loader2, Download, Copy, Check, Sparkles, Eye, Code as CodeIcon, Trash2 } from "lucide-react";
+import { ArrowLeft, Star, Zap, Loader2, Download, Copy, Check, Sparkles, Eye, Code as CodeIcon, Trash2, Globe, Rocket, Gauge, Brain, ExternalLink } from "lucide-react";
 import { getTool } from "@/lib/tools";
 import { useCredits } from "@/hooks/useCredits";
 import { useState, useMemo, type HTMLAttributes, type ReactNode } from "react";
@@ -9,6 +9,9 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { toast } from "sonner";
 import JSZip from "jszip";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 type GeneratedFile = { path: string; content: string };
 type ToolRunResponse = {
@@ -113,6 +116,13 @@ export default function ToolPage() {
   const [generatedFiles, setGeneratedFiles] = useState<GeneratedFile[]>([]);
   const [copiedAll, setCopiedAll] = useState(false);
   const [websiteView, setWebsiteView] = useState<"preview" | "code">("preview");
+  const [mode, setMode] = useState<"fast" | "pro">("fast");
+  const [generatedTitle, setGeneratedTitle] = useState<string>("");
+  const [publishOpen, setPublishOpen] = useState(false);
+  const [publishSlug, setPublishSlug] = useState("");
+  const [publishTitle, setPublishTitle] = useState("");
+  const [publishing, setPublishing] = useState(false);
+  const [publishedUrl, setPublishedUrl] = useState<string | null>(null);
 
   const Icon = tool?.icon;
   const isImage = tool?.id === "ai-image-generator";
