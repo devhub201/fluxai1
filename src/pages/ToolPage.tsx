@@ -440,6 +440,14 @@ export default function ToolPage() {
                     <Download className="h-3.5 w-3.5" /> {generatedFiles.length > 0 ? "ZIP" : "File"}
                   </button>
                 )}
+                {isWebsite && generatedFiles.length > 0 && (
+                  <button
+                    onClick={handleOpenPublish}
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-white bg-gradient-to-r from-fuchsia-500 to-primary hover:opacity-90 rounded-lg px-3 py-1.5 shadow-[0_0_18px_hsl(var(--primary)/0.4)]"
+                  >
+                    <Rocket className="h-3.5 w-3.5" /> Publish
+                  </button>
+                )}
                 {hasOutput && (
                   <button onClick={handleClear} className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground border border-border/60 rounded-lg px-2.5 py-1">
                     <Trash2 className="h-3.5 w-3.5" /> Clear
