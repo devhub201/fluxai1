@@ -16,8 +16,10 @@ import { Button } from "@/components/ui/button";
 type GeneratedFile = { path: string; content: string };
 type ToolRunResponse = {
   text?: string;
+  title?: string | null;
   imageUrl?: string | null;
   files?: GeneratedFile[] | null;
+  mode?: string;
   credits?: { dailySpent?: number; bonusBalance?: number | null };
   error?: string;
 };
