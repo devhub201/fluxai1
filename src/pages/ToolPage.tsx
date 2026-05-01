@@ -362,13 +362,36 @@ export default function ToolPage() {
               </div>
             </div>
 
+            {!isImage && (
+              <div className="space-y-1.5">
+                <label className="text-xs text-muted-foreground">AI Mode</label>
+                <div className="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-surface-2 border border-border/60">
+                  <button
+                    onClick={() => setMode("fast")}
+                    className={`h-9 rounded-lg text-[12px] font-medium inline-flex items-center justify-center gap-1.5 transition-all ${mode === "fast" ? "bg-primary text-primary-foreground shadow-[0_0_18px_hsl(var(--primary)/0.4)]" : "text-muted-foreground hover:text-foreground"}`}
+                  >
+                    <Gauge className="h-3.5 w-3.5" /> Fast
+                  </button>
+                  <button
+                    onClick={() => setMode("pro")}
+                    className={`h-9 rounded-lg text-[12px] font-medium inline-flex items-center justify-center gap-1.5 transition-all ${mode === "pro" ? "bg-gradient-to-r from-fuchsia-500 to-primary text-white shadow-[0_0_18px_hsl(var(--primary)/0.5)]" : "text-muted-foreground hover:text-foreground"}`}
+                  >
+                    <Brain className="h-3.5 w-3.5" /> Pro
+                  </button>
+                </div>
+                <p className="text-[10.5px] text-muted-foreground">
+                  {mode === "fast" ? "Fast mode — quick results, lower cost." : "Pro mode — deeper reasoning, higher quality, slower."}
+                </p>
+              </div>
+            )}
+
             <button
               onClick={handleGenerate}
               disabled={loading}
               className="w-full h-12 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 active:scale-[0.99] transition-all inline-flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed shadow-[0_0_24px_hsl(var(--primary)/0.35)]"
             >
               {loading ? (
-                <><Loader2 className="h-4 w-4 animate-spin" /> Generating…</>
+                <><Loader2 className="h-4 w-4 animate-spin" /> {isWebsite ? "Building your site…" : "Generating…"}</>
               ) : (
                 <><Sparkles className="h-4 w-4" /> Generate {isImage ? "Image" : isWebsite ? "Website" : ""}</>
               )}
