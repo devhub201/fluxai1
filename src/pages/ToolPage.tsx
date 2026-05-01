@@ -540,6 +540,76 @@ export default function ToolPage() {
           </div>
         </div>
       </div>
+
+      <Dialog open={publishOpen} onOpenChange={setPublishOpen}>
+        <DialogContent className="bg-card border-border">
+          <DialogHeader>
+            <DialogTitle className="inline-flex items-center gap-2">
+              <Rocket className="h-4 w-4 text-primary" /> Publish your website
+            </DialogTitle>
+            <DialogDescription>
+              Your site will be live instantly at a public Fluxa URL.
+            </DialogDescription>
+          </DialogHeader>
+
+          {publishedUrl ? (
+            <div className="space-y-3">
+              <div className="rounded-xl border border-emerald-400/30 bg-emerald-400/10 p-4 space-y-2">
+                <div className="text-xs uppercase tracking-wider text-emerald-300">Live URL</div>
+                <a
+                  href={publishedUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-primary text-sm font-medium break-all inline-flex items-center gap-1.5 hover:underline"
+                >
+                  {publishedUrl} <ExternalLink className="h-3.5 w-3.5" />
+                </a>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => {
+                    navigator.clipboard.writeText(publishedUrl);
+                    toast.success("URL copied");
+                  }}
+                >
+                  <Copy className="h-3.5 w-3.5" /> Copy URL
+                </Button>
+                <Button className="flex-1" onClick={() => window.open(publishedUrl, "_blank")}>
+                  <Globe className="h-3.5 w-3.5" /> Open Site
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <label className="text-xs text-muted-foreground">Site title</label>
+                <Input value={publishTitle} onChange={(e) => setPublishTitle(e.target.value)} placeholder="My awesome site" />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs text-muted-foreground">Public URL</label>
+                <div className="flex items-center gap-2 rounded-lg border border-border/60 bg-surface-2 px-3 h-10 text-sm">
+                  <span className="text-muted-foreground text-xs truncate">{window.location.host}/sites/</span>
+                  <input
+                    value={publishSlug}
+                    onChange={(e) => setPublishSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-"))}
+                    className="flex-1 bg-transparent outline-none text-sm"
+                    placeholder="my-site"
+                  />
+                </div>
+                <p className="text-[10.5px] text-muted-foreground">Lowercase letters, numbers, and dashes only.</p>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setPublishOpen(false)} disabled={publishing}>Cancel</Button>
+                <Button onClick={handlePublish} disabled={publishing}>
+                  {publishing ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Publishing…</> : <><Rocket className="h-3.5 w-3.5" /> Publish Now</>}
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
