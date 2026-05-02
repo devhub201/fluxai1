@@ -47,52 +47,6 @@ const jsonResponse = (body: Record<string, unknown>, status = 200) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
-const parseWebsiteProject = (message: any): { summary: string; title: string | null; assistantPlan: AssistantPlan | null; files: ProjectFile[] } => {
-  const args = message?.tool_calls?.[0]?.function?.arguments ?? message?.function_call?.arguments;
-  const tryParse = (raw: any) => {
-    if (!raw) return null;
-    try {
-      const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
-      const files = Array.isArray(parsed.files) ? parsed.files : [];
-      const plan = parsed.assistantPlan && typeof parsed.assistantPlan === "object" ? parsed.assistantPlan : null;
-      return {
-        summary: String(parsed.summary ?? "Your website project is ready."),
-        title: parsed.title ? String(parsed.title) : null,
-        assistantPlan: plan
-          ? {
-              layoutSuggestions: Array.isArray(plan.layoutSuggestions) ? plan.layoutSuggestions.map(String).slice(0, 6) : [],
-              assetIdeas: Array.isArray(plan.assetIdeas) ? plan.assetIdeas.map(String).slice(0, 6) : [],
-              changeExplanation: Array.isArray(plan.changeExplanation) ? plan.changeExplanation.map(String).slice(0, 6) : [],
-              publishChecklist: Array.isArray(plan.publishChecklist) ? plan.publishChecklist.map(String).slice(0, 6) : [],
-            }
-          : null,
-        files: files
-          .filter((file: any) => file?.path && typeof file?.content === "string")
-          .slice(0, 40)
-          .map((file: any) => ({ path: String(file.path), content: String(file.content) })),
-      };
-    } catch (e) {
-      console.error("website parse error", e);
-      return null;
-    }
-  };
-
-  const fromTool = tryParse(args);
-  if (fromTool && fromTool.files.length) return fromTool;
-
-  const text = String(message?.content ?? "");
-  const cleaned = text.replace(/^```json\s*/i, "").replace(/```$/i, "").trim();
-  const fromContent = tryParse(cleaned);
-  if (fromContent && fromContent.files.length) return fromContent;
-
-  return {
-    summary: "Your website project is ready.",
-    title: null,
-    assistantPlan: null,
-    files: [{ path: "preview.html", content: text || "<h1>Empty project</h1>" }],
-  };
-};
-
 const fallbackAssistantPlan = (title: string, prompt: string): AssistantPlan => ({
   layoutSuggestions: [
     `Use a conversion-focused hero for ${title} with one clear primary action.`,
