@@ -233,18 +233,7 @@ Return your response by calling the create_website_project function.`,
     const text: string = msg.content ?? "";
     const imageUrl: string | null = msg.images?.[0]?.image_url?.url ?? null;
     const project = isWebsite ? parseWebsiteProject(msg) : null;
-    const projectTitle = isWebsite
-      ? (() => {
-          try {
-            const args = msg?.tool_calls?.[0]?.function?.arguments;
-            if (args) {
-              const parsed = typeof args === "string" ? JSON.parse(args) : args;
-              if (parsed?.title) return String(parsed.title);
-            }
-          } catch (_) {}
-          return null;
-        })()
-      : null;
+    const projectTitle = project?.title ?? null;
 
     let bonusBalance: number | null = null;
     if (bonusToSpend > 0) {
@@ -265,6 +254,7 @@ Return your response by calling the create_website_project function.`,
       title: projectTitle,
       imageUrl,
       files: project?.files ?? null,
+      assistantPlan: project?.assistantPlan ?? null,
       mode: isPro ? "pro" : "fast",
       credits: { dailySpent: localDaily, bonusSpent: bonusToSpend, bonusBalance },
     });
