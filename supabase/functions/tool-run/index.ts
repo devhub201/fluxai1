@@ -82,6 +82,29 @@ const parseWebsiteProject = (message: any): { summary: string; title: string | n
   };
 };
 
+const fallbackAssistantPlan = (title: string, prompt: string): AssistantPlan => ({
+  layoutSuggestions: [
+    `Use a conversion-focused hero for ${title} with one clear primary action.`,
+    "Place proof, feature, pricing, and contact sections in a scannable homepage flow.",
+    "Keep dashboard or app pages separated from marketing pages for cleaner navigation.",
+  ],
+  assetIdeas: [
+    "Generate a premium hero visual that shows the product outcome clearly.",
+    "Use consistent icon cards for core features and workflow steps.",
+    "Add realistic screenshots/mockups based on the requested business category.",
+  ],
+  changeExplanation: [
+    `Built a full-stack project structure from: ${prompt.slice(0, 120)}${prompt.length > 120 ? "…" : ""}`,
+    "Added frontend pages, backend routes, database schema, setup docs, and a live preview file.",
+    "Prepared the project so it can be downloaded as ZIP or published to a Fluxa public URL.",
+  ],
+  publishChecklist: [
+    "Review text, links, and calls-to-action in the preview.",
+    "Download the ZIP if you want to edit the source files locally.",
+    "Publish only after the assistant change summary looks right.",
+  ],
+});
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
