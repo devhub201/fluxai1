@@ -391,9 +391,9 @@ Keep fields concise. Return by calling create_website_spec.`,
     const msg = data?.choices?.[0]?.message ?? {};
     const text: string = msg.content ?? "";
     const imageUrl: string | null = msg.images?.[0]?.image_url?.url ?? null;
-    const project = isWebsite ? parseWebsiteProject(msg) : null;
+    const project = isWebsite ? buildWebsiteProject(parseWebsiteSpec(msg, prompt, wantsAssistant), prompt, isPro) : null;
     const projectTitle = project?.title ?? null;
-    const assistantPlan = project?.assistantPlan ?? (isWebsite && wantsAssistant ? fallbackAssistantPlan(projectTitle ?? "your website", prompt) : null);
+    const assistantPlan = project?.assistantPlan ?? null;
 
     let bonusBalance: number | null = null;
     if (bonusToSpend > 0) {
