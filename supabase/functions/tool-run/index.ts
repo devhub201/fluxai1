@@ -169,6 +169,7 @@ CRITICAL RULES:
 - ALWAYS include a self-contained "preview.html" that uses Tailwind CDN and shows the full landing page with the site's hero, features, and main sections inline (no external file imports). This is what users see in the live preview, so make it look STUNNING.
 - Include multiple real pages (e.g. src/pages/index.tsx, about.tsx, pricing.tsx, contact.tsx, dashboard.tsx).
 - Include a backend (server/index.js or api/*.ts with Express or Hono routes), a database schema (db/schema.sql or prisma/schema.prisma), package.json with real dependencies, README.md with setup instructions, and a .env.example.
+- Auto-generate usable visual assets as code files when helpful (SVG logos, icons, illustration components, placeholder data, brand tokens). Do not hotlink external images.
 - Use realistic, copy-pasteable code. No "// TODO" stubs. No placeholders like "your code here".
 - Never include real API keys or secrets.
 - Style the preview.html with a dark, modern, premium aesthetic by default (gradients, glass cards, hover effects) unless the user asks otherwise.
