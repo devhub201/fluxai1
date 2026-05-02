@@ -303,23 +303,9 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `You are Fluxa AI Website Builder — a senior full-stack engineer. Generate a COMPLETE, production-quality, full-stack web project from the user's request.
-
-CRITICAL RULES:
-- Output 12-30 real, useful files. NEVER fewer than 10.
-- Build BOTH frontend AND backend, plus a database schema if data is involved.
-- Frontend MUST use modern, beautiful, responsive design (Tailwind via CDN is fine for the preview).
-- ALWAYS include a self-contained "preview.html" that uses Tailwind CDN and shows the full landing page with the site's hero, features, and main sections inline (no external file imports). This is what users see in the live preview, so make it look STUNNING.
-- Include multiple real pages (e.g. src/pages/index.tsx, about.tsx, pricing.tsx, contact.tsx, dashboard.tsx).
-- Include a backend (server/index.js or api/*.ts with Express or Hono routes), a database schema (db/schema.sql or prisma/schema.prisma), package.json with real dependencies, README.md with setup instructions, and a .env.example.
-- Auto-generate usable visual assets as code files when helpful (SVG logos, icons, illustration components, placeholder data, brand tokens). Do not hotlink external images.
-- Use realistic, copy-pasteable code. No "// TODO" stubs. No placeholders like "your code here".
-- Never include real API keys or secrets.
-- Style the preview.html with a dark, modern, premium aesthetic by default (gradients, glass cards, hover effects) unless the user asks otherwise.
-- Make every page visually distinct and content-rich.
-- If Assistant Mode is enabled, include assistantPlan with layoutSuggestions, assetIdeas for generated visuals/icons/sections, changeExplanation, and publishChecklist. Explain what changed BEFORE publishing.
-
-Return your response by calling the create_website_project function.`,
+            content: `You are Fluxa AI Website Builder assistant. Return a compact project SPEC, not source code.
+Choose a strong product direction from the user request. Suggest layouts, asset ideas, pages, features, CTAs, and explain the planned changes before publishing.
+Keep fields concise. Return by calling create_website_spec.`,
           },
           { role: "user", content: prompt },
         ],
@@ -328,12 +314,31 @@ Return your response by calling the create_website_project function.`,
             type: "function",
             function: {
               name: "create_website_project",
-              description: "Return a complete downloadable full-stack website project with many files.",
+              description: "Return a compact website plan/spec that Fluxa will compile into a full-stack project.",
               parameters: {
                 type: "object",
                 properties: {
-                  summary: { type: "string", description: "1-2 sentence description of what was built." },
                   title: { type: "string", description: "Short title for the site (used as page title)." },
+                  tagline: { type: "string" },
+                  audience: { type: "string" },
+                  theme: { type: "string" },
+                  pages: {
+                    type: "array",
+                    minItems: isPro ? 5 : 4,
+                    maxItems: 6,
+                    items: {
+                      type: "object",
+                      properties: {
+                        name: { type: "string" },
+                        path: { type: "string" },
+                        purpose: { type: "string" },
+                        sections: { type: "array", items: { type: "string" } },
+                      },
+                      required: ["name", "path", "purpose", "sections"],
+                    },
+                  },
+                  features: { type: "array", items: { type: "string" }, minItems: 4, maxItems: 8 },
+                  ctas: { type: "array", items: { type: "string" }, minItems: 2, maxItems: 4 },
                   assistantPlan: {
                     type: "object",
                     properties: {
@@ -344,26 +349,13 @@ Return your response by calling the create_website_project function.`,
                     },
                     required: ["layoutSuggestions", "assetIdeas", "changeExplanation", "publishChecklist"],
                   },
-                  files: {
-                    type: "array",
-                    minItems: 10,
-                    maxItems: 30,
-                    items: {
-                      type: "object",
-                      properties: {
-                        path: { type: "string" },
-                        content: { type: "string" },
-                      },
-                      required: ["path", "content"],
-                    },
-                  },
                 },
-                required: wantsAssistant ? ["summary", "title", "assistantPlan", "files"] : ["summary", "title", "files"],
+                required: wantsAssistant ? ["title", "tagline", "audience", "theme", "pages", "features", "ctas", "assistantPlan"] : ["title", "tagline", "audience", "theme", "pages", "features", "ctas"],
               },
             },
           },
         ],
-        tool_choice: { type: "function", function: { name: "create_website_project" } },
+        tool_choice: { type: "function", function: { name: "create_website_spec" } },
       };
     } else {
       const sys = SYSTEM_PROMPTS[toolId] ?? "You are a helpful AI assistant.";
