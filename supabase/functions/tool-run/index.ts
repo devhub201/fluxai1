@@ -23,6 +23,12 @@ const SYSTEM_PROMPTS: Record<string, string> = {
 };
 
 type ProjectFile = { path: string; content: string };
+type AssistantPlan = {
+  layoutSuggestions: string[];
+  assetIdeas: string[];
+  changeExplanation: string[];
+  publishChecklist: string[];
+};
 
 const jsonResponse = (body: Record<string, unknown>, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -30,15 +36,25 @@ const jsonResponse = (body: Record<string, unknown>, status = 200) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
-const parseWebsiteProject = (message: any): { summary: string; files: ProjectFile[] } => {
-  const args = message?.tool_calls?.[0]?.function?.arguments;
+const parseWebsiteProject = (message: any): { summary: string; title: string | null; assistantPlan: AssistantPlan | null; files: ProjectFile[] } => {
+  const args = message?.tool_calls?.[0]?.function?.arguments ?? message?.function_call?.arguments;
   const tryParse = (raw: any) => {
     if (!raw) return null;
     try {
       const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
       const files = Array.isArray(parsed.files) ? parsed.files : [];
+      const plan = parsed.assistantPlan && typeof parsed.assistantPlan === "object" ? parsed.assistantPlan : null;
       return {
         summary: String(parsed.summary ?? "Your website project is ready."),
+        title: parsed.title ? String(parsed.title) : null,
+        assistantPlan: plan
+          ? {
+              layoutSuggestions: Array.isArray(plan.layoutSuggestions) ? plan.layoutSuggestions.map(String).slice(0, 6) : [],
+              assetIdeas: Array.isArray(plan.assetIdeas) ? plan.assetIdeas.map(String).slice(0, 6) : [],
+              changeExplanation: Array.isArray(plan.changeExplanation) ? plan.changeExplanation.map(String).slice(0, 6) : [],
+              publishChecklist: Array.isArray(plan.publishChecklist) ? plan.publishChecklist.map(String).slice(0, 6) : [],
+            }
+          : null,
         files: files
           .filter((file: any) => file?.path && typeof file?.content === "string")
           .slice(0, 40)
@@ -60,6 +76,8 @@ const parseWebsiteProject = (message: any): { summary: string; files: ProjectFil
 
   return {
     summary: "Your website project is ready.",
+    title: null,
+    assistantPlan: null,
     files: [{ path: "preview.html", content: text || "<h1>Empty project</h1>" }],
   };
 };
