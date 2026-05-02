@@ -1,5 +1,5 @@
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Star, Zap, Loader2, Download, Copy, Check, Sparkles, Eye, Code as CodeIcon, Trash2, Globe, Rocket, Gauge, Brain, ExternalLink } from "lucide-react";
+import { ArrowLeft, Star, Zap, Loader2, Download, Copy, Check, Sparkles, Eye, Code as CodeIcon, Trash2, Globe, Rocket, Gauge, Brain, ExternalLink, Wand2, LayoutTemplate, ImagePlus, ListChecks } from "lucide-react";
 import { getTool } from "@/lib/tools";
 import { useCredits } from "@/hooks/useCredits";
 import { useState, useMemo, type HTMLAttributes, type ReactNode } from "react";
@@ -14,11 +14,18 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
 type GeneratedFile = { path: string; content: string };
+type AssistantPlan = {
+  layoutSuggestions: string[];
+  assetIdeas: string[];
+  changeExplanation: string[];
+  publishChecklist: string[];
+};
 type ToolRunResponse = {
   text?: string;
   title?: string | null;
   imageUrl?: string | null;
   files?: GeneratedFile[] | null;
+  assistantPlan?: AssistantPlan | null;
   mode?: string;
   credits?: { dailySpent?: number; bonusBalance?: number | null };
   error?: string;
