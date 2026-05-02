@@ -518,6 +518,25 @@ export default function ToolPage() {
 
               {!loading && isWebsite && previewHtml && websiteView === "preview" && (
                 <div className="space-y-3">
+                  {assistantPlan && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {[
+                        { title: "Layouts", icon: LayoutTemplate, items: assistantPlan.layoutSuggestions },
+                        { title: "Assets", icon: ImagePlus, items: assistantPlan.assetIdeas },
+                        { title: "Changes", icon: Wand2, items: assistantPlan.changeExplanation },
+                        { title: "Publish Check", icon: ListChecks, items: assistantPlan.publishChecklist },
+                      ].map(({ title, icon: PlanIcon, items }) => (
+                        <div key={title} className="rounded-lg border border-border/60 bg-background/50 p-3">
+                          <div className="mb-2 inline-flex items-center gap-1.5 text-xs font-semibold text-primary">
+                            <PlanIcon className="h-3.5 w-3.5" /> {title}
+                          </div>
+                          <ul className="space-y-1 text-[11px] text-muted-foreground">
+                            {(items ?? []).slice(0, 4).map((item, index) => <li key={`${title}-${index}`}>• {item}</li>)}
+                          </ul>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                   <iframe
                     title="Website preview"
                     srcDoc={previewHtml}
