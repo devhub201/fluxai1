@@ -126,6 +126,8 @@ export default function ToolPage() {
   const [copiedAll, setCopiedAll] = useState(false);
   const [websiteView, setWebsiteView] = useState<"preview" | "code">("preview");
   const [mode, setMode] = useState<"fast" | "pro">("fast");
+  const [assistantMode, setAssistantMode] = useState(true);
+  const [assistantPlan, setAssistantPlan] = useState<AssistantPlan | null>(null);
   const [generatedTitle, setGeneratedTitle] = useState<string>("");
   const [publishOpen, setPublishOpen] = useState(false);
   const [publishSlug, setPublishSlug] = useState("");
@@ -174,11 +176,12 @@ export default function ToolPage() {
     setOutput("");
     setImageUrl(null);
     setGeneratedFiles([]);
+    setAssistantPlan(null);
     setGeneratedTitle("");
     setPublishedUrl(null);
     try {
       const { data, error } = await supabase.functions.invoke<ToolRunResponse>("tool-run", {
-        body: { toolId: tool.id, prompt, options: { language }, creditCost: tool.credits, dailyCredits, mode },
+        body: { toolId: tool.id, prompt, options: { language, assistantMode: isWebsite ? assistantMode : false }, creditCost: tool.credits, dailyCredits, mode },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
@@ -189,6 +192,7 @@ export default function ToolPage() {
       setOutput(data?.text ?? "");
       setImageUrl(data?.imageUrl ?? null);
       setGeneratedFiles(Array.isArray(data?.files) ? data.files : []);
+      setAssistantPlan(data?.assistantPlan ?? null);
       if (data?.title) setGeneratedTitle(data.title);
       toast.success(isWebsite ? `Website built with ${mode === "pro" ? "Pro" : "Fast"} mode` : "Generated!");
     } catch (e: unknown) {
@@ -277,6 +281,7 @@ export default function ToolPage() {
     setOutput("");
     setImageUrl(null);
     setGeneratedFiles([]);
+    setAssistantPlan(null);
   };
 
   const hasOutput = !!output || !!imageUrl || generatedFiles.length > 0;
