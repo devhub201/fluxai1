@@ -632,6 +632,16 @@ export default function ToolPage() {
             </div>
           ) : (
             <div className="space-y-3">
+              {assistantPlan && (
+                <div className="rounded-xl border border-primary/30 bg-primary/10 p-3">
+                  <div className="mb-2 inline-flex items-center gap-1.5 text-xs font-semibold text-primary">
+                    <Wand2 className="h-3.5 w-3.5" /> Assistant review before publishing
+                  </div>
+                  <ul className="space-y-1 text-[11px] text-muted-foreground">
+                    {assistantPlan.changeExplanation.slice(0, 3).map((item, index) => <li key={index}>• {item}</li>)}
+                  </ul>
+                </div>
+              )}
               <div className="space-y-1.5">
                 <label className="text-xs text-muted-foreground">Site title</label>
                 <Input value={publishTitle} onChange={(e) => setPublishTitle(e.target.value)} placeholder="My awesome site" />
