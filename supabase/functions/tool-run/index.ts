@@ -227,7 +227,9 @@ const buildWebsiteProject = (spec: SiteSpec, prompt: string, isPro: boolean): { 
     { path: "preview.html", content: previewHtml },
     { path: "package.json", content: JSON.stringify({ scripts: { dev: "vite", build: "vite build", preview: "vite preview", server: "tsx server/index.ts" }, dependencies: { "@vitejs/plugin-react": "latest", vite: "latest", react: "latest", "react-dom": "latest", "lucide-react": "latest", express: "latest", cors: "latest", zod: "latest" }, devDependencies: { typescript: "latest", tsx: "latest" } }, null, 2) },
     { path: "README.md", content: `# ${title}\n\n${spec.tagline}\n\n## What Fluxa generated\n- Multi-page React frontend\n- Express backend routes\n- Database schema\n- SVG brand assets\n- Self-contained preview.html\n\n## Run\n\n\`\`\`bash\nnpm install\nnpm run dev\nnpm run server\n\`\`\`\n` },
-    { path: ".env.example", content: "DATABASE_URL=\nAPI_BASE_URL=http://localhost:8787\n" },
+    { path: ".env.example", content: `DATABASE_URL=
+API_BASE_URL=http://localhost:8787
+` },
     { path: "index.html", content: `<div id="root"></div><script type="module" src="/src/main.tsx"></script>\n` },
     { path: "src/main.tsx", content: `import React from "react";\nimport { createRoot } from "react-dom/client";\nimport App from "./App";\nimport "./styles.css";\n\ncreateRoot(document.getElementById("root")!).render(<React.StrictMode><App /></React.StrictMode>);\n` },
     { path: "src/App.tsx", content: `import Header from "./components/Header";\nimport Hero from "./components/Hero";\nimport FeatureGrid from "./components/FeatureGrid";\nimport Footer from "./components/Footer";\n\nexport default function App() {\n  return <><Header /><Hero /><FeatureGrid /><Footer /></>;\n}\n` },
@@ -243,7 +245,7 @@ const buildWebsiteProject = (spec: SiteSpec, prompt: string, isPro: boolean): { 
     { path: "db/schema.sql", content: `create table leads (\n  id uuid primary key default gen_random_uuid(),\n  email text not null,\n  message text not null,\n  created_at timestamptz not null default now()\n);\n\ncreate table app_events (\n  id uuid primary key default gen_random_uuid(),\n  event_name text not null,\n  payload jsonb not null default '{}'::jsonb,\n  created_at timestamptz not null default now()\n);\n` },
     { path: "public/assets/logo.svg", content: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><rect width="120" height="120" rx="28" fill="#020617"/><path d="M28 76 58 22h34L68 56h28L54 100l12-24H28Z" fill="#67e8f9"/></svg>` },
     { path: "public/assets/hero-mark.svg", content: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 420"><rect width="600" height="420" rx="40" fill="#0f172a"/><circle cx="170" cy="120" r="90" fill="#22d3ee" opacity=".25"/><circle cx="420" cy="160" r="120" fill="#a855f7" opacity=".25"/><rect x="90" y="110" width="420" height="220" rx="28" fill="#ffffff" opacity=".08"/><path d="M140 260h320M140 210h240M140 160h160" stroke="#e2e8f0" stroke-width="18" stroke-linecap="round" opacity=".9"/></svg>` },
-  ].slice(0, isPro ? 30 : 22);
+  ];
 
   return { summary: `${title} is ready with ${files.length} generated full-stack files, assistant guidance, assets, preview, backend routes, and database schema.`, title, assistantPlan: spec.assistantPlan, files };
 };
