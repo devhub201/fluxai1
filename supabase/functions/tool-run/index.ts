@@ -313,7 +313,7 @@ Keep fields concise. Return by calling create_website_spec.`,
           {
             type: "function",
             function: {
-              name: "create_website_project",
+              name: "create_website_spec",
               description: "Return a compact website plan/spec that Fluxa will compile into a full-stack project.",
               parameters: {
                 type: "object",
