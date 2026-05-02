@@ -121,6 +121,7 @@ serve(async (req) => {
     const isImage = toolId === "ai-image-generator";
     const isWebsite = toolId === "website-builder";
     const isPro = mode === "pro";
+    const wantsAssistant = isWebsite && options?.assistantMode !== false;
 
     let body: any;
     if (isImage) {
@@ -149,6 +150,7 @@ CRITICAL RULES:
 - Never include real API keys or secrets.
 - Style the preview.html with a dark, modern, premium aesthetic by default (gradients, glass cards, hover effects) unless the user asks otherwise.
 - Make every page visually distinct and content-rich.
+- If Assistant Mode is enabled, include assistantPlan with layoutSuggestions, assetIdeas for generated visuals/icons/sections, changeExplanation, and publishChecklist. Explain what changed BEFORE publishing.
 
 Return your response by calling the create_website_project function.`,
           },
@@ -165,6 +167,16 @@ Return your response by calling the create_website_project function.`,
                 properties: {
                   summary: { type: "string", description: "1-2 sentence description of what was built." },
                   title: { type: "string", description: "Short title for the site (used as page title)." },
+                  assistantPlan: {
+                    type: "object",
+                    properties: {
+                      layoutSuggestions: { type: "array", items: { type: "string" } },
+                      assetIdeas: { type: "array", items: { type: "string" } },
+                      changeExplanation: { type: "array", items: { type: "string" } },
+                      publishChecklist: { type: "array", items: { type: "string" } },
+                    },
+                    required: ["layoutSuggestions", "assetIdeas", "changeExplanation", "publishChecklist"],
+                  },
                   files: {
                     type: "array",
                     minItems: 10,
@@ -179,7 +191,7 @@ Return your response by calling the create_website_project function.`,
                     },
                   },
                 },
-                required: ["summary", "title", "files"],
+                required: wantsAssistant ? ["summary", "title", "assistantPlan", "files"] : ["summary", "title", "files"],
               },
             },
           },
