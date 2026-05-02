@@ -1,5 +1,5 @@
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Star, Zap, Loader2, Download, Copy, Check, Sparkles, Eye, Code as CodeIcon, Trash2, Globe, Rocket, Gauge, Brain, ExternalLink } from "lucide-react";
+import { ArrowLeft, Star, Zap, Loader2, Download, Copy, Check, Sparkles, Eye, Code as CodeIcon, Trash2, Globe, Rocket, Gauge, Brain, ExternalLink, Wand2, LayoutTemplate, ImagePlus, ListChecks } from "lucide-react";
 import { getTool } from "@/lib/tools";
 import { useCredits } from "@/hooks/useCredits";
 import { useState, useMemo, type HTMLAttributes, type ReactNode } from "react";
@@ -14,11 +14,18 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
 type GeneratedFile = { path: string; content: string };
+type AssistantPlan = {
+  layoutSuggestions: string[];
+  assetIdeas: string[];
+  changeExplanation: string[];
+  publishChecklist: string[];
+};
 type ToolRunResponse = {
   text?: string;
   title?: string | null;
   imageUrl?: string | null;
   files?: GeneratedFile[] | null;
+  assistantPlan?: AssistantPlan | null;
   mode?: string;
   credits?: { dailySpent?: number; bonusBalance?: number | null };
   error?: string;
@@ -119,6 +126,8 @@ export default function ToolPage() {
   const [copiedAll, setCopiedAll] = useState(false);
   const [websiteView, setWebsiteView] = useState<"preview" | "code">("preview");
   const [mode, setMode] = useState<"fast" | "pro">("fast");
+  const [assistantMode, setAssistantMode] = useState(true);
+  const [assistantPlan, setAssistantPlan] = useState<AssistantPlan | null>(null);
   const [generatedTitle, setGeneratedTitle] = useState<string>("");
   const [publishOpen, setPublishOpen] = useState(false);
   const [publishSlug, setPublishSlug] = useState("");
@@ -167,11 +176,12 @@ export default function ToolPage() {
     setOutput("");
     setImageUrl(null);
     setGeneratedFiles([]);
+    setAssistantPlan(null);
     setGeneratedTitle("");
     setPublishedUrl(null);
     try {
       const { data, error } = await supabase.functions.invoke<ToolRunResponse>("tool-run", {
-        body: { toolId: tool.id, prompt, options: { language }, creditCost: tool.credits, dailyCredits, mode },
+        body: { toolId: tool.id, prompt, options: { language, assistantMode: isWebsite ? assistantMode : false }, creditCost: tool.credits, dailyCredits, mode },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
@@ -182,6 +192,7 @@ export default function ToolPage() {
       setOutput(data?.text ?? "");
       setImageUrl(data?.imageUrl ?? null);
       setGeneratedFiles(Array.isArray(data?.files) ? data.files : []);
+      setAssistantPlan(data?.assistantPlan ?? null);
       if (data?.title) setGeneratedTitle(data.title);
       toast.success(isWebsite ? `Website built with ${mode === "pro" ? "Pro" : "Fast"} mode` : "Generated!");
     } catch (e: unknown) {
@@ -270,6 +281,7 @@ export default function ToolPage() {
     setOutput("");
     setImageUrl(null);
     setGeneratedFiles([]);
+    setAssistantPlan(null);
   };
 
   const hasOutput = !!output || !!imageUrl || generatedFiles.length > 0;
@@ -385,6 +397,24 @@ export default function ToolPage() {
               </div>
             )}
 
+            {isWebsite && (
+              <button
+                type="button"
+                onClick={() => setAssistantMode((value) => !value)}
+                className={`w-full rounded-xl border p-3 text-left transition-all ${assistantMode ? "border-primary/50 bg-primary/10 shadow-[0_0_18px_hsl(var(--primary)/0.2)]" : "border-border/60 bg-surface-2 hover:border-primary/40"}`}
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <span className="inline-flex items-center gap-2 text-sm font-semibold">
+                    <Wand2 className="h-4 w-4 text-primary" /> Assistant Mode
+                  </span>
+                  <span className={`h-5 w-9 rounded-full border transition-colors ${assistantMode ? "border-primary bg-primary" : "border-border bg-background"}`}>
+                    <span className={`block h-4 w-4 rounded-full bg-primary-foreground transition-transform ${assistantMode ? "translate-x-4" : "translate-x-0.5"} mt-0.5`} />
+                  </span>
+                </div>
+                <p className="mt-1 text-[10.5px] text-muted-foreground">Suggest layouts, generate asset directions, and explain changes before publishing.</p>
+              </button>
+            )}
+
             <button
               onClick={handleGenerate}
               disabled={loading}
@@ -488,6 +518,25 @@ export default function ToolPage() {
 
               {!loading && isWebsite && previewHtml && websiteView === "preview" && (
                 <div className="space-y-3">
+                  {assistantPlan && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {[
+                        { title: "Layouts", icon: LayoutTemplate, items: assistantPlan.layoutSuggestions },
+                        { title: "Assets", icon: ImagePlus, items: assistantPlan.assetIdeas },
+                        { title: "Changes", icon: Wand2, items: assistantPlan.changeExplanation },
+                        { title: "Publish Check", icon: ListChecks, items: assistantPlan.publishChecklist },
+                      ].map(({ title, icon: PlanIcon, items }) => (
+                        <div key={title} className="rounded-lg border border-border/60 bg-background/50 p-3">
+                          <div className="mb-2 inline-flex items-center gap-1.5 text-xs font-semibold text-primary">
+                            <PlanIcon className="h-3.5 w-3.5" /> {title}
+                          </div>
+                          <ul className="space-y-1 text-[11px] text-muted-foreground">
+                            {(items ?? []).slice(0, 4).map((item, index) => <li key={`${title}-${index}`}>• {item}</li>)}
+                          </ul>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                   <iframe
                     title="Website preview"
                     srcDoc={previewHtml}
@@ -583,6 +632,16 @@ export default function ToolPage() {
             </div>
           ) : (
             <div className="space-y-3">
+              {assistantPlan && (
+                <div className="rounded-xl border border-primary/30 bg-primary/10 p-3">
+                  <div className="mb-2 inline-flex items-center gap-1.5 text-xs font-semibold text-primary">
+                    <Wand2 className="h-3.5 w-3.5" /> Assistant review before publishing
+                  </div>
+                  <ul className="space-y-1 text-[11px] text-muted-foreground">
+                    {assistantPlan.changeExplanation.slice(0, 3).map((item, index) => <li key={index}>• {item}</li>)}
+                  </ul>
+                </div>
+              )}
               <div className="space-y-1.5">
                 <label className="text-xs text-muted-foreground">Site title</label>
                 <Input value={publishTitle} onChange={(e) => setPublishTitle(e.target.value)} placeholder="My awesome site" />
