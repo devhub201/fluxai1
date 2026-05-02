@@ -397,6 +397,24 @@ export default function ToolPage() {
               </div>
             )}
 
+            {isWebsite && (
+              <button
+                type="button"
+                onClick={() => setAssistantMode((value) => !value)}
+                className={`w-full rounded-xl border p-3 text-left transition-all ${assistantMode ? "border-primary/50 bg-primary/10 shadow-[0_0_18px_hsl(var(--primary)/0.2)]" : "border-border/60 bg-surface-2 hover:border-primary/40"}`}
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <span className="inline-flex items-center gap-2 text-sm font-semibold">
+                    <Wand2 className="h-4 w-4 text-primary" /> Assistant Mode
+                  </span>
+                  <span className={`h-5 w-9 rounded-full border transition-colors ${assistantMode ? "border-primary bg-primary" : "border-border bg-background"}`}>
+                    <span className={`block h-4 w-4 rounded-full bg-primary-foreground transition-transform ${assistantMode ? "translate-x-4" : "translate-x-0.5"} mt-0.5`} />
+                  </span>
+                </div>
+                <p className="mt-1 text-[10.5px] text-muted-foreground">Suggest layouts, generate asset directions, and explain changes before publishing.</p>
+              </button>
+            )}
+
             <button
               onClick={handleGenerate}
               disabled={loading}
