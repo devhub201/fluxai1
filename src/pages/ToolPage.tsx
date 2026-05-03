@@ -694,6 +694,43 @@ export default function ToolPage() {
             </div>
           </div>
         </div>
+
+        {isWebsite && (
+          <section className="rounded-2xl bg-card border border-border p-5 space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <h2 className="text-sm font-semibold">My Published Sites</h2>
+                <p className="text-xs text-muted-foreground">View, unpublish, or delete sites you created.</p>
+              </div>
+              <Button variant="outline" size="sm" onClick={loadPublishedSites} disabled={sitesLoading}>Refresh</Button>
+            </div>
+            {publishedSites.length === 0 ? (
+              <div className="rounded-xl border border-border/60 bg-surface-2/60 p-4 text-xs text-muted-foreground text-center">
+                {sitesLoading ? "Loading sites…" : "No published sites yet."}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {publishedSites.map((site) => {
+                  const url = `${window.location.origin}/sites/${site.slug}`;
+                  return (
+                    <div key={site.id} className="rounded-xl border border-border/60 bg-surface-2/60 p-3 flex flex-col sm:flex-row sm:items-center gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-semibold truncate">{site.title}</div>
+                        <a href={url} target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline truncate block">{url}</a>
+                        <div className="text-[11px] text-muted-foreground">{site.is_published ? "Published" : "Unpublished"} · {new Date(site.updated_at).toLocaleString()}</div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button variant="outline" size="sm" onClick={() => window.open(url, "_blank")}><ExternalLink className="h-3.5 w-3.5" /></Button>
+                        {site.is_published && <Button variant="outline" size="sm" onClick={() => manageSite("unpublish", site.id)}>Unpublish</Button>}
+                        <Button variant="destructive" size="sm" onClick={() => confirm("Delete this site?") && manageSite("delete", site.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+        )}
       </div>
 
       <Dialog open={publishOpen} onOpenChange={setPublishOpen}>
