@@ -765,6 +765,24 @@ export default function ToolPage() {
                 </div>
                 <p className="text-[10.5px] text-muted-foreground">Lowercase letters, numbers, and dashes only.</p>
               </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="text-xs text-muted-foreground">SEO title</label>
+                  <Input value={seoTitle} onChange={(e) => setSeoTitle(e.target.value)} maxLength={70} placeholder="Best title for search" />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs text-muted-foreground">OG image URL</label>
+                  <Input value={ogImageUrl} onChange={(e) => setOgImageUrl(e.target.value)} placeholder="https://.../image.png" />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs text-muted-foreground">SEO description</label>
+                <Input value={seoDescription} onChange={(e) => setSeoDescription(e.target.value)} maxLength={180} placeholder="Short description for search and sharing" />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs text-muted-foreground">Sitemap URL</label>
+                <Input value={sitemapUrl} onChange={(e) => setSitemapUrl(e.target.value)} placeholder="https://.../sitemap.xml" />
+              </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setPublishOpen(false)} disabled={publishing}>Cancel</Button>
                 <Button onClick={handlePublish} disabled={publishing}>
