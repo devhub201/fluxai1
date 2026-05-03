@@ -587,7 +587,19 @@ export default function ToolPage() {
                     <div className="h-12 w-12 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
                     <Sparkles className="h-5 w-5 text-primary absolute inset-0 m-auto" />
                   </div>
-                  <div className="text-xs">Generating with Fluxa AI…</div>
+                  {isWebsite ? (
+                    <div className="w-full max-w-md space-y-3 text-center">
+                      <div className="text-xs font-medium text-foreground">{generationJob?.step ?? "plan"} · {generationJob?.progress ?? 3}%</div>
+                      <div className="h-2 rounded-full bg-background overflow-hidden border border-border/60">
+                        <div className="h-full bg-primary transition-all" style={{ width: `${generationJob?.progress ?? 3}%` }} />
+                      </div>
+                      <div className="grid grid-cols-5 gap-1 text-[10px]">
+                        {["plan", "frontend", "backend", "preview", "finalize"].map((step) => (
+                          <span key={step} className={step === generationJob?.step ? "text-primary" : "text-muted-foreground"}>{step}</span>
+                        ))}
+                      </div>
+                    </div>
+                  ) : <div className="text-xs">Generating with Fluxa AI…</div>}
                 </div>
               )}
 
