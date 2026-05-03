@@ -1,0 +1,1 @@
+GRANT EXECUTE ON FUNCTION public.admin_grant_credits(text, bigint, text) TO authenticated;
