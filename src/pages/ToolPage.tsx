@@ -155,13 +155,35 @@ export default function ToolPage() {
   const [publishOpen, setPublishOpen] = useState(false);
   const [publishSlug, setPublishSlug] = useState("");
   const [publishTitle, setPublishTitle] = useState("");
+  const [seoTitle, setSeoTitle] = useState("");
+  const [seoDescription, setSeoDescription] = useState("");
+  const [ogImageUrl, setOgImageUrl] = useState("");
+  const [sitemapUrl, setSitemapUrl] = useState("");
   const [publishing, setPublishing] = useState(false);
   const [publishedUrl, setPublishedUrl] = useState<string | null>(null);
+  const [generationJob, setGenerationJob] = useState<WebsiteJob | null>(null);
+  const [publishedSites, setPublishedSites] = useState<PublishedSiteRow[]>([]);
+  const [sitesLoading, setSitesLoading] = useState(false);
 
   const Icon = tool?.icon;
   const isImage = tool?.id === "ai-image-generator";
   const isWebsite = tool?.id === "website-builder";
   const isCode = tool?.id === "code-generator";
+
+  const loadPublishedSites = async () => {
+    if (!isWebsite) return;
+    setSitesLoading(true);
+    const { data, error } = await supabase.functions.invoke<{ sites?: PublishedSiteRow[]; error?: string }>("publish-site", {
+      body: { action: "list" },
+    });
+    setSitesLoading(false);
+    if (error || data?.error) return;
+    setPublishedSites(data?.sites ?? []);
+  };
+
+  useEffect(() => {
+    loadPublishedSites();
+  }, [isWebsite]);
 
   // Extract HTML for website builder
   const previewHtml = useMemo(() => {
