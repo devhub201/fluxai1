@@ -2,7 +2,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Star, Zap, Loader2, Download, Copy, Check, Sparkles, Eye, Code as CodeIcon, Trash2, Globe, Rocket, Gauge, Brain, ExternalLink, Wand2, LayoutTemplate, ImagePlus, ListChecks } from "lucide-react";
 import { getTool } from "@/lib/tools";
 import { useCredits } from "@/hooks/useCredits";
-import { useState, useMemo, type HTMLAttributes, type ReactNode } from "react";
+import { useEffect, useState, useMemo, type HTMLAttributes, type ReactNode } from "react";
 import { addLog } from "@/lib/adminStore";
 import { supabase } from "@/integrations/supabase/client";
 import ReactMarkdown from "react-markdown";
@@ -28,7 +28,29 @@ type ToolRunResponse = {
   assistantPlan?: AssistantPlan | null;
   mode?: string;
   credits?: { dailySpent?: number; bonusBalance?: number | null };
+  jobId?: string;
   error?: string;
+};
+type WebsiteJob = {
+  id: string;
+  status: "queued" | "running" | "completed" | "failed";
+  step: string;
+  progress: number;
+  title: string | null;
+  summary: string | null;
+  files: GeneratedFile[] | null;
+  assistant_plan: AssistantPlan | null;
+  credits: { dailySpent?: number; bonusBalance?: number | null } | null;
+  error_message: string | null;
+};
+type PublishedSiteRow = {
+  id: string;
+  slug: string;
+  title: string;
+  is_published: boolean;
+  updated_at: string;
+  seo_title: string | null;
+  seo_description: string | null;
 };
 
 const LANGUAGES = ["JavaScript", "TypeScript", "Python", "Java", "C++", "Go", "Rust", "PHP", "Ruby", "Swift", "HTML", "CSS", "SQL"];
@@ -72,6 +94,7 @@ const EXT_BY_LANGUAGE: Record<string, string> = {
 };
 
 const slugify = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "fluxa-output";
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const stripFence = (value: string) => {
   const match = value.match(/^```[\w-]*\s*([\s\S]*?)```$/i);
