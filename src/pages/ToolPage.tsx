@@ -185,6 +185,33 @@ export default function ToolPage() {
     loadPublishedSites();
   }, [isWebsite]);
 
+  const pollWebsiteJob = async (jobId: string) => {
+    for (let i = 0; i < 90; i++) {
+      const { data, error } = await supabase
+        .from("website_generation_jobs")
+        .select("id,status,step,progress,title,summary,files,assistant_plan,credits,error_message")
+        .eq("id", jobId)
+        .maybeSingle();
+      if (error) throw error;
+      const job = data as WebsiteJob | null;
+      if (job) setGenerationJob(job);
+      if (job?.status === "completed") {
+        const files = Array.isArray(job.files) ? job.files : [];
+        setOutput(job.summary ?? "Your website project is ready.");
+        setGeneratedFiles(files);
+        setAssistantPlan(job.assistant_plan ?? null);
+        if (job.title) setGeneratedTitle(job.title);
+        applySpendResult(Number(job.credits?.dailySpent ?? 0), job.credits?.bonusBalance ?? null);
+        addLog({ type: "tool", message: `Used ${tool.name} (${mode})`, amount: tool.credits });
+        toast.success(`Website built with ${mode === "pro" ? "Pro" : "Fast"} mode`);
+        return;
+      }
+      if (job?.status === "failed") throw new Error(job.error_message ?? "Website generation failed");
+      await sleep(1500);
+    }
+    throw new Error("Website generation is taking too long. Try again in a moment.");
+  };
+
   // Extract HTML for website builder
   const previewHtml = useMemo(() => {
     if (!isWebsite) return null;
@@ -224,12 +251,18 @@ export default function ToolPage() {
     setAssistantPlan(null);
     setGeneratedTitle("");
     setPublishedUrl(null);
+    setGenerationJob(isWebsite ? { id: "", status: "queued", step: "plan", progress: 3, title: null, summary: null, files: null, assistant_plan: null, credits: null, error_message: null } : null);
     try {
       const { data, error } = await supabase.functions.invoke<ToolRunResponse>("tool-run", {
         body: { toolId: tool.id, prompt, options: { language, assistantMode: isWebsite ? assistantMode : false }, creditCost: tool.credits, dailyCredits, mode },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
+
+      if (isWebsite && data?.jobId) {
+        await pollWebsiteJob(data.jobId);
+        return;
+      }
 
       applySpendResult(Number(data?.credits?.dailySpent ?? 0), data?.credits?.bonusBalance ?? null);
       addLog({ type: "tool", message: `Used ${tool.name} (${mode})`, amount: tool.credits });
