@@ -37,7 +37,7 @@ serve(async (req) => {
     if (action === "list") {
       const { data, error } = await adminClient
         .from("published_sites")
-        .select("id, slug, title, is_published, updated_at, created_at, model")
+        .select("id, slug, title, is_published, updated_at, created_at, model, seo_title, seo_description, og_image_url, sitemap_url")
         .eq("user_id", user.id)
         .order("updated_at", { ascending: false });
       if (error) return json({ error: error.message }, 500);
@@ -65,7 +65,7 @@ serve(async (req) => {
     }
 
     // publish (create or update)
-    const { slug: rawSlug, title, files, prompt, model } = body;
+    const { slug: rawSlug, title, files, prompt, model, seoTitle, seoDescription, ogImageUrl, sitemapUrl } = body;
     if (!Array.isArray(files) || files.length === 0) return json({ error: "files required" }, 400);
     let slug = slugify(String(rawSlug ?? title ?? "site"));
 
@@ -89,6 +89,10 @@ serve(async (req) => {
           title: String(title ?? "Untitled Site").slice(0, 120),
           prompt: prompt ? String(prompt).slice(0, 4000) : null,
           model: model ? String(model) : null,
+          seo_title: seoTitle ? String(seoTitle).slice(0, 70) : null,
+          seo_description: seoDescription ? String(seoDescription).slice(0, 180) : null,
+          og_image_url: ogImageUrl ? String(ogImageUrl).slice(0, 1000) : null,
+          sitemap_url: sitemapUrl ? String(sitemapUrl).slice(0, 1000) : null,
           files,
           is_published: true,
         },
