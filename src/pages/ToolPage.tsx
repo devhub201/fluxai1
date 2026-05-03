@@ -202,7 +202,7 @@ export default function ToolPage() {
         setAssistantPlan(job.assistant_plan ?? null);
         if (job.title) setGeneratedTitle(job.title);
         applySpendResult(Number(job.credits?.dailySpent ?? 0), job.credits?.bonusBalance ?? null);
-        addLog({ type: "tool", message: `Used ${tool.name} (${mode})`, amount: tool.credits });
+        addLog({ type: "tool", message: `Used ${tool?.name ?? "Website Builder"} (${mode})`, amount: tool?.credits ?? 0 });
         toast.success(`Website built with ${mode === "pro" ? "Pro" : "Fast"} mode`);
         return;
       }
