@@ -284,8 +284,19 @@ export default function ToolPage() {
     const baseTitle = generatedTitle || prompt.slice(0, 60) || "My Site";
     setPublishTitle(baseTitle);
     setPublishSlug(slugify(baseTitle));
+    setSeoTitle(baseTitle.slice(0, 60));
+    setSeoDescription((output || `Built with Fluxa AI from: ${prompt}`).replace(/[#*_`]/g, "").slice(0, 155));
+    setOgImageUrl("");
+    setSitemapUrl(`${window.location.origin}/sites/${slugify(baseTitle)}/sitemap.xml`);
     setPublishedUrl(null);
     setPublishOpen(true);
+  };
+
+  const manageSite = async (action: "unpublish" | "delete", id: string) => {
+    const { data, error } = await supabase.functions.invoke<{ ok?: boolean; error?: string }>("publish-site", { body: { action, id } });
+    if (error || data?.error) return toast.error(data?.error ?? error?.message ?? "Action failed");
+    toast.success(action === "delete" ? "Site deleted" : "Site unpublished");
+    loadPublishedSites();
   };
 
   const handlePublish = async () => {
@@ -309,6 +320,10 @@ export default function ToolPage() {
             files: generatedFiles,
             prompt,
             model: mode === "pro" ? "pro" : "fast",
+            seoTitle,
+            seoDescription,
+            ogImageUrl,
+            sitemapUrl,
           },
         },
       );
@@ -317,6 +332,7 @@ export default function ToolPage() {
       const url = `${window.location.origin}/sites/${data?.slug}`;
       setPublishedUrl(url);
       toast.success("Published! Site is live.");
+      loadPublishedSites();
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "Failed to publish");
     } finally {
