@@ -436,9 +436,8 @@ serve(async (req) => {
     const msg = data?.choices?.[0]?.message ?? {};
     const text: string = msg.content ?? "";
     const imageUrl: string | null = msg.images?.[0]?.image_url?.url ?? null;
-    const project = null;
-    const projectTitle = project?.title ?? null;
-    const assistantPlan = project?.assistantPlan ?? null;
+    const projectTitle = null;
+    const assistantPlan = null;
 
     let bonusBalance: number | null = null;
     if (bonusToSpend > 0) {
@@ -455,10 +454,10 @@ serve(async (req) => {
     }
 
     return jsonResponse({
-      text: isWebsite ? project?.summary ?? "Your website project is ready." : text,
+      text,
       title: projectTitle,
       imageUrl,
-      files: project?.files ?? null,
+      files: null,
       assistantPlan,
       mode: isPro ? "pro" : "fast",
       credits: { dailySpent: localDaily, bonusSpent: bonusToSpend, bonusBalance },
