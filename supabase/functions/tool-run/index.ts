@@ -204,6 +204,133 @@ API_BASE_URL=http://localhost:8787
   return { summary: `${title} is ready with ${files.length} generated full-stack files, assistant guidance, assets, preview, backend routes, and database schema.`, title, assistantPlan: spec.assistantPlan, files };
 };
 
+const websiteSpecBody = (prompt: string, isPro: boolean, wantsAssistant: boolean) => ({
+  model: isPro ? "google/gemini-2.5-pro" : "google/gemini-3-flash-preview",
+  messages: [
+    {
+      role: "system",
+      content: `You are Fluxa AI Website Builder assistant. Return a compact project SPEC, not source code.
+Choose a strong product direction from the user request. Suggest layouts, asset ideas, pages, features, CTAs, and explain the planned changes before publishing.
+Keep fields concise. Return by calling create_website_spec.`,
+    },
+    { role: "user", content: prompt },
+  ],
+  tools: [
+    {
+      type: "function",
+      function: {
+        name: "create_website_spec",
+        description: "Return a compact website plan/spec that Fluxa will compile into a full-stack project.",
+        parameters: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            title: { type: "string", description: "Short title for the site (used as page title)." },
+            tagline: { type: "string" },
+            audience: { type: "string" },
+            theme: { type: "string" },
+            pages: {
+              type: "array",
+              minItems: isPro ? 5 : 4,
+              maxItems: 6,
+              items: {
+                type: "object",
+                additionalProperties: false,
+                properties: {
+                  name: { type: "string" },
+                  path: { type: "string" },
+                  purpose: { type: "string" },
+                  sections: { type: "array", items: { type: "string" } },
+                },
+                required: ["name", "path", "purpose", "sections"],
+              },
+            },
+            features: { type: "array", items: { type: "string" }, minItems: 4, maxItems: 8 },
+            ctas: { type: "array", items: { type: "string" }, minItems: 2, maxItems: 4 },
+            assistantPlan: {
+              type: "object",
+              additionalProperties: false,
+              properties: {
+                layoutSuggestions: { type: "array", items: { type: "string" } },
+                assetIdeas: { type: "array", items: { type: "string" } },
+                changeExplanation: { type: "array", items: { type: "string" } },
+                publishChecklist: { type: "array", items: { type: "string" } },
+              },
+              required: ["layoutSuggestions", "assetIdeas", "changeExplanation", "publishChecklist"],
+            },
+          },
+          required: wantsAssistant ? ["title", "tagline", "audience", "theme", "pages", "features", "ctas", "assistantPlan"] : ["title", "tagline", "audience", "theme", "pages", "features", "ctas"],
+        },
+      },
+    },
+  ],
+  tool_choice: { type: "function", function: { name: "create_website_spec" } },
+});
+
+const updateJob = async (client: any, id: string, patch: Record<string, unknown>) => {
+  await client.from("website_generation_jobs").update(patch).eq("id", id);
+};
+
+const runWebsiteJob = async ({ jobId, prompt, isPro, wantsAssistant, cost, localDaily, bonusToSpend, user, adminClient, apiKey }: any) => {
+  try {
+    await updateJob(adminClient, jobId, { status: "running", step: "plan", progress: 12 });
+    let msg: any = {};
+    try {
+      const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify(websiteSpecBody(prompt, isPro, wantsAssistant)),
+      });
+      if (r.ok) {
+        const data = await r.json();
+        msg = data?.choices?.[0]?.message ?? {};
+      } else {
+        console.error("Website AI gateway error", r.status, await r.text());
+      }
+    } catch (e) {
+      console.error("Website AI request failed; using reliable compiler fallback", e);
+    }
+
+    await updateJob(adminClient, jobId, { step: "frontend", progress: 38 });
+    const spec = parseWebsiteSpec(msg, prompt, wantsAssistant);
+    const project = buildWebsiteProject(spec, prompt, isPro);
+
+    await updateJob(adminClient, jobId, { step: "backend", progress: 62, title: project.title, summary: project.summary });
+    await updateJob(adminClient, jobId, { step: "preview", progress: 82, files: project.files, assistant_plan: project.assistantPlan });
+
+    let bonusBalance: number | null = null;
+    if (bonusToSpend > 0) {
+      const { data: nextBalance, error: spendError } = await adminClient.rpc("spend_user_credits", {
+        _user_id: user.id,
+        _email: user.email,
+        _amount: bonusToSpend,
+      });
+      if (spendError) throw new Error("Could not deduct credits");
+      bonusBalance = Number(nextBalance ?? 0);
+    }
+
+    await updateJob(adminClient, jobId, {
+      status: "completed",
+      step: "finalize",
+      progress: 100,
+      title: project.title,
+      summary: project.summary,
+      files: project.files,
+      assistant_plan: project.assistantPlan,
+      credits: { dailySpent: localDaily, bonusSpent: bonusToSpend, bonusBalance, total: cost },
+      error_message: null,
+    });
+  } catch (e) {
+    console.error("website generation job failed", e);
+    await updateJob(adminClient, jobId, {
+      status: "failed",
+      step: "finalize",
+      progress: 100,
+      error_message: e instanceof Error ? e.message : "Website generation failed",
+    });
+  }
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -245,73 +372,35 @@ serve(async (req) => {
     const isPro = mode === "pro";
     const wantsAssistant = isWebsite && options?.assistantMode !== false;
 
+    if (isWebsite) {
+      const { data: job, error: jobError } = await adminClient
+        .from("website_generation_jobs")
+        .insert({
+          user_id: user.id,
+          tool_id: toolId,
+          prompt,
+          mode: isPro ? "pro" : "fast",
+          status: "queued",
+          step: "plan",
+          progress: 3,
+        })
+        .select("id")
+        .single();
+      if (jobError || !job?.id) return jsonResponse({ error: jobError?.message ?? "Could not start website job" }, 500);
+
+      const promise = runWebsiteJob({ jobId: job.id, prompt, isPro, wantsAssistant, cost, localDaily, bonusToSpend, user, adminClient, apiKey: LOVABLE_API_KEY });
+      const runtime = (globalThis as any).EdgeRuntime;
+      if (runtime?.waitUntil) runtime.waitUntil(promise);
+      else await promise;
+      return jsonResponse({ jobId: job.id, status: "running", step: "plan", progress: 3 }, 202);
+    }
+
     let body: any;
     if (isImage) {
       body = {
         model: "google/gemini-2.5-flash-image",
         messages: [{ role: "user", content: prompt }],
         modalities: ["image", "text"],
-      };
-    } else if (isWebsite) {
-      const websiteModel = isPro ? "google/gemini-2.5-pro" : "google/gemini-3-flash-preview";
-      body = {
-        model: websiteModel,
-        messages: [
-          {
-            role: "system",
-            content: `You are Fluxa AI Website Builder assistant. Return a compact project SPEC, not source code.
-Choose a strong product direction from the user request. Suggest layouts, asset ideas, pages, features, CTAs, and explain the planned changes before publishing.
-Keep fields concise. Return by calling create_website_spec.`,
-          },
-          { role: "user", content: prompt },
-        ],
-        tools: [
-          {
-            type: "function",
-            function: {
-              name: "create_website_spec",
-              description: "Return a compact website plan/spec that Fluxa will compile into a full-stack project.",
-              parameters: {
-                type: "object",
-                properties: {
-                  title: { type: "string", description: "Short title for the site (used as page title)." },
-                  tagline: { type: "string" },
-                  audience: { type: "string" },
-                  theme: { type: "string" },
-                  pages: {
-                    type: "array",
-                    minItems: isPro ? 5 : 4,
-                    maxItems: 6,
-                    items: {
-                      type: "object",
-                      properties: {
-                        name: { type: "string" },
-                        path: { type: "string" },
-                        purpose: { type: "string" },
-                        sections: { type: "array", items: { type: "string" } },
-                      },
-                      required: ["name", "path", "purpose", "sections"],
-                    },
-                  },
-                  features: { type: "array", items: { type: "string" }, minItems: 4, maxItems: 8 },
-                  ctas: { type: "array", items: { type: "string" }, minItems: 2, maxItems: 4 },
-                  assistantPlan: {
-                    type: "object",
-                    properties: {
-                      layoutSuggestions: { type: "array", items: { type: "string" } },
-                      assetIdeas: { type: "array", items: { type: "string" } },
-                      changeExplanation: { type: "array", items: { type: "string" } },
-                      publishChecklist: { type: "array", items: { type: "string" } },
-                    },
-                    required: ["layoutSuggestions", "assetIdeas", "changeExplanation", "publishChecklist"],
-                  },
-                },
-                required: wantsAssistant ? ["title", "tagline", "audience", "theme", "pages", "features", "ctas", "assistantPlan"] : ["title", "tagline", "audience", "theme", "pages", "features", "ctas"],
-              },
-            },
-          },
-        ],
-        tool_choice: { type: "function", function: { name: "create_website_spec" } },
       };
     } else {
       const sys = SYSTEM_PROMPTS[toolId] ?? "You are a helpful AI assistant.";
@@ -347,9 +436,8 @@ Keep fields concise. Return by calling create_website_spec.`,
     const msg = data?.choices?.[0]?.message ?? {};
     const text: string = msg.content ?? "";
     const imageUrl: string | null = msg.images?.[0]?.image_url?.url ?? null;
-    const project = isWebsite ? buildWebsiteProject(parseWebsiteSpec(msg, prompt, wantsAssistant), prompt, isPro) : null;
-    const projectTitle = project?.title ?? null;
-    const assistantPlan = project?.assistantPlan ?? null;
+    const projectTitle = null;
+    const assistantPlan = null;
 
     let bonusBalance: number | null = null;
     if (bonusToSpend > 0) {
@@ -366,10 +454,10 @@ Keep fields concise. Return by calling create_website_spec.`,
     }
 
     return jsonResponse({
-      text: isWebsite ? project?.summary ?? "Your website project is ready." : text,
+      text,
       title: projectTitle,
       imageUrl,
-      files: project?.files ?? null,
+      files: null,
       assistantPlan,
       mode: isPro ? "pro" : "fast",
       credits: { dailySpent: localDaily, bonusSpent: bonusToSpend, bonusBalance },

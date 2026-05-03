@@ -2,7 +2,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Star, Zap, Loader2, Download, Copy, Check, Sparkles, Eye, Code as CodeIcon, Trash2, Globe, Rocket, Gauge, Brain, ExternalLink, Wand2, LayoutTemplate, ImagePlus, ListChecks } from "lucide-react";
 import { getTool } from "@/lib/tools";
 import { useCredits } from "@/hooks/useCredits";
-import { useState, useMemo, type HTMLAttributes, type ReactNode } from "react";
+import { useEffect, useState, useMemo, type HTMLAttributes, type ReactNode } from "react";
 import { addLog } from "@/lib/adminStore";
 import { supabase } from "@/integrations/supabase/client";
 import ReactMarkdown from "react-markdown";
@@ -28,7 +28,29 @@ type ToolRunResponse = {
   assistantPlan?: AssistantPlan | null;
   mode?: string;
   credits?: { dailySpent?: number; bonusBalance?: number | null };
+  jobId?: string;
   error?: string;
+};
+type WebsiteJob = {
+  id: string;
+  status: "queued" | "running" | "completed" | "failed";
+  step: string;
+  progress: number;
+  title: string | null;
+  summary: string | null;
+  files: GeneratedFile[] | null;
+  assistant_plan: AssistantPlan | null;
+  credits: { dailySpent?: number; bonusBalance?: number | null } | null;
+  error_message: string | null;
+};
+type PublishedSiteRow = {
+  id: string;
+  slug: string;
+  title: string;
+  is_published: boolean;
+  updated_at: string;
+  seo_title: string | null;
+  seo_description: string | null;
 };
 
 const LANGUAGES = ["JavaScript", "TypeScript", "Python", "Java", "C++", "Go", "Rust", "PHP", "Ruby", "Swift", "HTML", "CSS", "SQL"];
@@ -72,6 +94,7 @@ const EXT_BY_LANGUAGE: Record<string, string> = {
 };
 
 const slugify = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "fluxa-output";
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const stripFence = (value: string) => {
   const match = value.match(/^```[\w-]*\s*([\s\S]*?)```$/i);
@@ -132,13 +155,62 @@ export default function ToolPage() {
   const [publishOpen, setPublishOpen] = useState(false);
   const [publishSlug, setPublishSlug] = useState("");
   const [publishTitle, setPublishTitle] = useState("");
+  const [seoTitle, setSeoTitle] = useState("");
+  const [seoDescription, setSeoDescription] = useState("");
+  const [ogImageUrl, setOgImageUrl] = useState("");
+  const [sitemapUrl, setSitemapUrl] = useState("");
   const [publishing, setPublishing] = useState(false);
   const [publishedUrl, setPublishedUrl] = useState<string | null>(null);
+  const [generationJob, setGenerationJob] = useState<WebsiteJob | null>(null);
+  const [publishedSites, setPublishedSites] = useState<PublishedSiteRow[]>([]);
+  const [sitesLoading, setSitesLoading] = useState(false);
 
   const Icon = tool?.icon;
   const isImage = tool?.id === "ai-image-generator";
   const isWebsite = tool?.id === "website-builder";
   const isCode = tool?.id === "code-generator";
+
+  const loadPublishedSites = async () => {
+    if (!isWebsite) return;
+    setSitesLoading(true);
+    const { data, error } = await supabase.functions.invoke<{ sites?: PublishedSiteRow[]; error?: string }>("publish-site", {
+      body: { action: "list" },
+    });
+    setSitesLoading(false);
+    if (error || data?.error) return;
+    setPublishedSites(data?.sites ?? []);
+  };
+
+  useEffect(() => {
+    loadPublishedSites();
+  }, [isWebsite]);
+
+  const pollWebsiteJob = async (jobId: string) => {
+    for (let i = 0; i < 90; i++) {
+      const { data, error } = await supabase
+        .from("website_generation_jobs")
+        .select("id,status,step,progress,title,summary,files,assistant_plan,credits,error_message")
+        .eq("id", jobId)
+        .maybeSingle();
+      if (error) throw error;
+      const job = data as WebsiteJob | null;
+      if (job) setGenerationJob(job);
+      if (job?.status === "completed") {
+        const files = Array.isArray(job.files) ? job.files : [];
+        setOutput(job.summary ?? "Your website project is ready.");
+        setGeneratedFiles(files);
+        setAssistantPlan(job.assistant_plan ?? null);
+        if (job.title) setGeneratedTitle(job.title);
+        applySpendResult(Number(job.credits?.dailySpent ?? 0), job.credits?.bonusBalance ?? null);
+        addLog({ type: "tool", message: `Used ${tool?.name ?? "Website Builder"} (${mode})`, amount: tool?.credits ?? 0 });
+        toast.success(`Website built with ${mode === "pro" ? "Pro" : "Fast"} mode`);
+        return;
+      }
+      if (job?.status === "failed") throw new Error(job.error_message ?? "Website generation failed");
+      await sleep(1500);
+    }
+    throw new Error("Website generation is taking too long. Try again in a moment.");
+  };
 
   // Extract HTML for website builder
   const previewHtml = useMemo(() => {
@@ -179,12 +251,18 @@ export default function ToolPage() {
     setAssistantPlan(null);
     setGeneratedTitle("");
     setPublishedUrl(null);
+    setGenerationJob(isWebsite ? { id: "", status: "queued", step: "plan", progress: 3, title: null, summary: null, files: null, assistant_plan: null, credits: null, error_message: null } : null);
     try {
       const { data, error } = await supabase.functions.invoke<ToolRunResponse>("tool-run", {
         body: { toolId: tool.id, prompt, options: { language, assistantMode: isWebsite ? assistantMode : false }, creditCost: tool.credits, dailyCredits, mode },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
+
+      if (isWebsite && data?.jobId) {
+        await pollWebsiteJob(data.jobId);
+        return;
+      }
 
       applySpendResult(Number(data?.credits?.dailySpent ?? 0), data?.credits?.bonusBalance ?? null);
       addLog({ type: "tool", message: `Used ${tool.name} (${mode})`, amount: tool.credits });
@@ -206,8 +284,19 @@ export default function ToolPage() {
     const baseTitle = generatedTitle || prompt.slice(0, 60) || "My Site";
     setPublishTitle(baseTitle);
     setPublishSlug(slugify(baseTitle));
+    setSeoTitle(baseTitle.slice(0, 60));
+    setSeoDescription((output || `Built with Fluxa AI from: ${prompt}`).replace(/[#*_`]/g, "").slice(0, 155));
+    setOgImageUrl("");
+    setSitemapUrl(`${window.location.origin}/sites/${slugify(baseTitle)}/sitemap.xml`);
     setPublishedUrl(null);
     setPublishOpen(true);
+  };
+
+  const manageSite = async (action: "unpublish" | "delete", id: string) => {
+    const { data, error } = await supabase.functions.invoke<{ ok?: boolean; error?: string }>("publish-site", { body: { action, id } });
+    if (error || data?.error) return toast.error(data?.error ?? error?.message ?? "Action failed");
+    toast.success(action === "delete" ? "Site deleted" : "Site unpublished");
+    loadPublishedSites();
   };
 
   const handlePublish = async () => {
@@ -231,6 +320,10 @@ export default function ToolPage() {
             files: generatedFiles,
             prompt,
             model: mode === "pro" ? "pro" : "fast",
+            seoTitle,
+            seoDescription,
+            ogImageUrl,
+            sitemapUrl,
           },
         },
       );
@@ -239,6 +332,7 @@ export default function ToolPage() {
       const url = `${window.location.origin}/sites/${data?.slug}`;
       setPublishedUrl(url);
       toast.success("Published! Site is live.");
+      loadPublishedSites();
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "Failed to publish");
     } finally {
@@ -493,7 +587,19 @@ export default function ToolPage() {
                     <div className="h-12 w-12 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
                     <Sparkles className="h-5 w-5 text-primary absolute inset-0 m-auto" />
                   </div>
-                  <div className="text-xs">Generating with Fluxa AI…</div>
+                  {isWebsite ? (
+                    <div className="w-full max-w-md space-y-3 text-center">
+                      <div className="text-xs font-medium text-foreground">{generationJob?.step ?? "plan"} · {generationJob?.progress ?? 3}%</div>
+                      <div className="h-2 rounded-full bg-background overflow-hidden border border-border/60">
+                        <div className="h-full bg-primary transition-all" style={{ width: `${generationJob?.progress ?? 3}%` }} />
+                      </div>
+                      <div className="grid grid-cols-5 gap-1 text-[10px]">
+                        {["plan", "frontend", "backend", "preview", "finalize"].map((step) => (
+                          <span key={step} className={step === generationJob?.step ? "text-primary" : "text-muted-foreground"}>{step}</span>
+                        ))}
+                      </div>
+                    </div>
+                  ) : <div className="text-xs">Generating with Fluxa AI…</div>}
                 </div>
               )}
 
@@ -588,6 +694,43 @@ export default function ToolPage() {
             </div>
           </div>
         </div>
+
+        {isWebsite && (
+          <section className="rounded-2xl bg-card border border-border p-5 space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <h2 className="text-sm font-semibold">My Published Sites</h2>
+                <p className="text-xs text-muted-foreground">View, unpublish, or delete sites you created.</p>
+              </div>
+              <Button variant="outline" size="sm" onClick={loadPublishedSites} disabled={sitesLoading}>Refresh</Button>
+            </div>
+            {publishedSites.length === 0 ? (
+              <div className="rounded-xl border border-border/60 bg-surface-2/60 p-4 text-xs text-muted-foreground text-center">
+                {sitesLoading ? "Loading sites…" : "No published sites yet."}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {publishedSites.map((site) => {
+                  const url = `${window.location.origin}/sites/${site.slug}`;
+                  return (
+                    <div key={site.id} className="rounded-xl border border-border/60 bg-surface-2/60 p-3 flex flex-col sm:flex-row sm:items-center gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-semibold truncate">{site.title}</div>
+                        <a href={url} target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline truncate block">{url}</a>
+                        <div className="text-[11px] text-muted-foreground">{site.is_published ? "Published" : "Unpublished"} · {new Date(site.updated_at).toLocaleString()}</div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button variant="outline" size="sm" onClick={() => window.open(url, "_blank")}><ExternalLink className="h-3.5 w-3.5" /></Button>
+                        {site.is_published && <Button variant="outline" size="sm" onClick={() => manageSite("unpublish", site.id)}>Unpublish</Button>}
+                        <Button variant="destructive" size="sm" onClick={() => confirm("Delete this site?") && manageSite("delete", site.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+        )}
       </div>
 
       <Dialog open={publishOpen} onOpenChange={setPublishOpen}>
@@ -658,6 +801,24 @@ export default function ToolPage() {
                   />
                 </div>
                 <p className="text-[10.5px] text-muted-foreground">Lowercase letters, numbers, and dashes only.</p>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="text-xs text-muted-foreground">SEO title</label>
+                  <Input value={seoTitle} onChange={(e) => setSeoTitle(e.target.value)} maxLength={70} placeholder="Best title for search" />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs text-muted-foreground">OG image URL</label>
+                  <Input value={ogImageUrl} onChange={(e) => setOgImageUrl(e.target.value)} placeholder="https://.../image.png" />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs text-muted-foreground">SEO description</label>
+                <Input value={seoDescription} onChange={(e) => setSeoDescription(e.target.value)} maxLength={180} placeholder="Short description for search and sharing" />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs text-muted-foreground">Sitemap URL</label>
+                <Input value={sitemapUrl} onChange={(e) => setSitemapUrl(e.target.value)} placeholder="https://.../sitemap.xml" />
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setPublishOpen(false)} disabled={publishing}>Cancel</Button>

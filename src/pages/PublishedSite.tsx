@@ -5,6 +5,18 @@ import { Loader2, ExternalLink, Sparkles } from "lucide-react";
 
 type SiteFile = { path: string; content: string };
 
+const setMeta = (name: string, content?: string | null, property = false) => {
+  if (!content) return;
+  const attr = property ? "property" : "name";
+  let el = document.querySelector(`meta[${attr}="${name}"]`) as HTMLMetaElement | null;
+  if (!el) {
+    el = document.createElement("meta");
+    el.setAttribute(attr, name);
+    document.head.appendChild(el);
+  }
+  el.content = content;
+};
+
 export default function PublishedSite() {
   const { slug } = useParams();
   const [loading, setLoading] = useState(true);
@@ -18,7 +30,7 @@ export default function PublishedSite() {
       if (!slug) return;
       const { data } = await supabase
         .from("published_sites")
-        .select("title, files")
+        .select("title, files, seo_title, seo_description, og_image_url, sitemap_url")
         .eq("slug", slug)
         .eq("is_published", true)
         .maybeSingle();
@@ -34,7 +46,12 @@ export default function PublishedSite() {
         files.find((f) => f.path.toLowerCase().endsWith("index.html")) ??
         files[0];
       setTitle(data.title || "Fluxa Site");
-      document.title = data.title || "Fluxa Site";
+      document.title = data.seo_title || data.title || "Fluxa Site";
+      setMeta("description", data.seo_description);
+      setMeta("og:title", data.seo_title || data.title, true);
+      setMeta("og:description", data.seo_description, true);
+      setMeta("og:image", data.og_image_url, true);
+      setMeta("sitemap", data.sitemap_url);
       setHtml(preview?.content ?? "<h1 style='font-family:sans-serif;padding:40px'>Empty site</h1>");
       setLoading(false);
     })();

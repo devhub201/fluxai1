@@ -155,7 +155,11 @@ export type Database = {
           id: string
           is_published: boolean
           model: string | null
+          og_image_url: string | null
           prompt: string | null
+          seo_description: string | null
+          seo_title: string | null
+          sitemap_url: string | null
           slug: string
           title: string
           updated_at: string
@@ -167,7 +171,11 @@ export type Database = {
           id?: string
           is_published?: boolean
           model?: string | null
+          og_image_url?: string | null
           prompt?: string | null
+          seo_description?: string | null
+          seo_title?: string | null
+          sitemap_url?: string | null
           slug: string
           title?: string
           updated_at?: string
@@ -179,7 +187,11 @@ export type Database = {
           id?: string
           is_published?: boolean
           model?: string | null
+          og_image_url?: string | null
           prompt?: string | null
+          seo_description?: string | null
+          seo_title?: string | null
+          sitemap_url?: string | null
           slug?: string
           title?: string
           updated_at?: string
@@ -234,6 +246,63 @@ export type Database = {
           created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      website_generation_jobs: {
+        Row: {
+          assistant_plan: Json | null
+          created_at: string
+          credits: Json
+          error_message: string | null
+          files: Json
+          id: string
+          mode: string
+          progress: number
+          prompt: string
+          status: string
+          step: string
+          summary: string | null
+          title: string | null
+          tool_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          assistant_plan?: Json | null
+          created_at?: string
+          credits?: Json
+          error_message?: string | null
+          files?: Json
+          id?: string
+          mode?: string
+          progress?: number
+          prompt: string
+          status?: string
+          step?: string
+          summary?: string | null
+          title?: string | null
+          tool_id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          assistant_plan?: Json | null
+          created_at?: string
+          credits?: Json
+          error_message?: string | null
+          files?: Json
+          id?: string
+          mode?: string
+          progress?: number
+          prompt?: string
+          status?: string
+          step?: string
+          summary?: string | null
+          title?: string | null
+          tool_id?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
