@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_changelog: {
+        Row: {
+          body: string
+          created_at: string
+          created_by: string | null
+          id: string
+          title: string
+          version: string | null
+        }
+        Insert: {
+          body?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          title: string
+          version?: string | null
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          title?: string
+          version?: string | null
+        }
+        Relationships: []
+      }
       app_settings: {
         Row: {
           key: string
@@ -89,6 +116,81 @@ export type Database = {
         }
         Relationships: []
       }
+      custom_tools: {
+        Row: {
+          category: string
+          created_at: string
+          created_by: string | null
+          credits: number
+          description: string
+          icon: string
+          id: string
+          is_active: boolean
+          name: string
+          placeholder: string
+          suggestions: Json
+          system_prompt: string
+          tool_id: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          credits?: number
+          description?: string
+          icon?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          placeholder?: string
+          suggestions?: Json
+          system_prompt?: string
+          tool_id: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          credits?: number
+          description?: string
+          icon?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          placeholder?: string
+          suggestions?: Json
+          system_prompt?: string
+          tool_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      feature_flags: {
+        Row: {
+          description: string
+          enabled: boolean
+          key: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          description?: string
+          enabled?: boolean
+          key: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          description?: string
+          enabled?: boolean
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           chat_id: string
@@ -123,6 +225,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      moderation_flags: {
+        Row: {
+          created_at: string
+          id: string
+          reason: string
+          reporter_id: string
+          reviewed_by: string | null
+          status: string
+          target_id: string | null
+          target_type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          reason?: string
+          reporter_id: string
+          reviewed_by?: string | null
+          status?: string
+          target_id?: string | null
+          target_type?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          reason?: string
+          reporter_id?: string
+          reviewed_by?: string | null
+          status?: string
+          target_id?: string | null
+          target_type?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -195,6 +333,33 @@ export type Database = {
           slug?: string
           title?: string
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_bans: {
+        Row: {
+          banned_by: string | null
+          created_at: string
+          expires_at: string | null
+          id: string
+          reason: string
+          user_id: string
+        }
+        Insert: {
+          banned_by?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          reason?: string
+          user_id: string
+        }
+        Update: {
+          banned_by?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          reason?: string
           user_id?: string
         }
         Relationships: []
@@ -312,6 +477,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_bulk_grant_credits: {
+        Args: { _amount: number; _note?: string }
+        Returns: number
+      }
       admin_grant_credits: {
         Args: { _amount: number; _email: string; _note?: string }
         Returns: {
@@ -330,6 +499,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      admin_reset_all_credits: { Args: never; Returns: number }
       get_my_credits: { Args: never; Returns: number }
       has_role: {
         Args: {
