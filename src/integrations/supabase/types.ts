@@ -499,7 +499,30 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      admin_list_staff: {
+        Args: never
+        Returns: {
+          created_at: string
+          display_name: string
+          email: string
+          user_id: string
+        }[]
+      }
+      admin_list_users: {
+        Args: never
+        Returns: {
+          created_at: string
+          display_name: string
+          email: string
+          roles: string[]
+          user_id: string
+        }[]
+      }
       admin_reset_all_credits: { Args: never; Returns: number }
+      admin_set_staff_role: {
+        Args: { _email: string; _enabled: boolean }
+        Returns: Json
+      }
       get_my_credits: { Args: never; Returns: number }
       has_role: {
         Args: {
@@ -509,6 +532,7 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: never; Returns: boolean }
+      is_staff: { Args: never; Returns: boolean }
       spend_my_credits: { Args: { _amount: number }; Returns: number }
       spend_user_credits: {
         Args: { _amount: number; _email: string; _user_id: string }
@@ -516,7 +540,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "user"
+      app_role: "admin" | "user" | "staff"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -644,7 +668,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "user"],
+      app_role: ["admin", "user", "staff"],
     },
   },
 } as const
