@@ -2,7 +2,6 @@ import { ReactNode, useEffect, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { ADMIN_EMAIL } from "@/lib/adminStore";
 
 export const AdminGuard = ({ children }: { children: ReactNode }) => {
   const location = useLocation();
