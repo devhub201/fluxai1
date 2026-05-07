@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Plus, Pencil, Trash2, Save, X } from "lucide-react";
+import { Plus, Pencil, Trash2, Save, X, Sparkles } from "lucide-react";
 import { addTool, deleteTool, getTools, updateTool } from "@/lib/adminStore";
 import { useAdminStore } from "@/hooks/useAdminStore";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function AdminTools() {
   useAdminStore();
@@ -11,6 +12,8 @@ export default function AdminTools() {
   const [form, setForm] = useState({ name: "", desc: "", credits: 100 });
   const [adding, setAdding] = useState(false);
   const [newTool, setNewTool] = useState({ name: "", desc: "", credits: 100 });
+  const [aiIdea, setAiIdea] = useState("3D game idea generator with assets, scene hierarchy, scripts and controls");
+  const [aiBusy, setAiBusy] = useState(false);
 
   const startEdit = (id: string) => {
     const t = tools.find((x) => x.id === id);
@@ -32,6 +35,18 @@ export default function AdminTools() {
     setNewTool({ name: "", desc: "", credits: 100 });
     setAdding(false);
     toast.success("Tool added");
+  };
+
+  const createWithAi = async () => {
+    if (!aiIdea.trim()) return toast.error("Describe the tool first");
+    setAiBusy(true);
+    const { data, error } = await supabase.functions.invoke<{ tool?: { tool_id: string; name: string; description: string; credits: number }; error?: string }>("admin-tool-creator", {
+      body: { prompt: aiIdea, answers: "Publish it directly to the Tools page as a working AI tool." },
+    });
+    setAiBusy(false);
+    if (error || data?.error || !data?.tool) return toast.error(data?.error ?? error?.message ?? "AI creator failed");
+    addTool({ id: data.tool.tool_id, name: data.tool.name, desc: data.tool.description, credits: data.tool.credits, rating: 4.8 });
+    toast.success("AI tool created and published to Tools");
   };
 
   return (
@@ -77,6 +92,12 @@ export default function AdminTools() {
           </div>
         </div>
       )}
+
+      <section className="rounded-2xl bg-card border border-primary/30 p-4 space-y-3">
+        <div className="flex items-center gap-2 text-sm font-semibold"><Sparkles className="h-4 w-4 text-primary" /> AI Tool Creator</div>
+        <textarea value={aiIdea} onChange={(e) => setAiIdea(e.target.value)} className="w-full min-h-24 rounded-xl bg-surface-2 border border-border/60 p-3 text-sm outline-none focus:border-primary/60" placeholder="Tell AI what tool to create..." />
+        <button onClick={createWithAi} disabled={aiBusy} className="btn-primary !h-10 gap-2"><Sparkles className="h-4 w-4" /> {aiBusy ? "Creating…" : "Create & Publish Tool"}</button>
+      </section>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {tools.map((t) => {
