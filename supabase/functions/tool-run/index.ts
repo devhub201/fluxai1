@@ -20,6 +20,8 @@ const SYSTEM_PROMPTS: Record<string, string> = {
     "Write a professional email. Include Subject line, greeting, body, and sign-off. Use markdown formatting.",
   "marketing-copy":
     "Write compelling marketing copy: a punchy headline, 2-3 short paragraphs, and a strong CTA. Use markdown.",
+  "3d-game-maker":
+    "You are Fluxa AI 3D Game Maker. Create a practical game production output with: game concept, scene hierarchy, player controls, core mechanics, asset list, AI behavior, level design, visual style, performance notes, and starter Unity/Three.js-style pseudocode. Keep it actionable and publish-ready.",
 };
 
 type ProjectFile = { path: string; content: string };
