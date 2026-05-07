@@ -405,7 +405,16 @@ serve(async (req) => {
         modalities: ["image", "text"],
       };
     } else {
-      const sys = SYSTEM_PROMPTS[toolId] ?? "You are a helpful AI assistant.";
+      let sys = SYSTEM_PROMPTS[toolId] ?? "You are a helpful AI assistant.";
+      if (!SYSTEM_PROMPTS[toolId]) {
+        const { data: customTool } = await adminClient
+          .from("custom_tools")
+          .select("system_prompt")
+          .eq("tool_id", toolId)
+          .eq("is_active", true)
+          .maybeSingle();
+        if (customTool?.system_prompt) sys = customTool.system_prompt;
+      }
       let userContent = prompt;
       if (toolId === "code-generator" && options?.language) {
         userContent = `Language: ${options.language}\n\nTask: ${prompt}`;
