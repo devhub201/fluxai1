@@ -18,17 +18,9 @@ export const AdminGuard = ({ children }: { children: ReactNode }) => {
     }
     let cancelled = false;
     (async () => {
-      const { data, error } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id)
-        .eq("role", "admin")
-        .maybeSingle();
+      const { data, error } = await supabase.rpc("is_admin");
       if (cancelled) return;
-      // Fall back to email check if roles row not yet inserted
-      const ok = !!data && !error
-        ? true
-        : user.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+      const ok = data === true && !error;
       setIsAdmin(ok);
       setChecking(false);
     })();
