@@ -1,8 +1,24 @@
 import { useAdminData } from "@/hooks/useAdminData";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Shield, UserPlus } from "lucide-react";
+import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export default function AdminUsers() {
   const { users, loading, refresh } = useAdminData();
+  const [staffEmail, setStaffEmail] = useState("");
+  const [staffBusy, setStaffBusy] = useState(false);
+
+  const setStaff = async (enabled: boolean) => {
+    const email = staffEmail.trim().toLowerCase();
+    if (!email || !email.includes("@")) return toast.error("Enter user email");
+    setStaffBusy(true);
+    const { error } = await supabase.rpc("admin_set_staff_role", { _email: email, _enabled: enabled });
+    setStaffBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success(enabled ? "Staff access granted" : "Staff access removed");
+    setStaffEmail("");
+  };
 
   return (
     <div className="p-4 sm:p-6 space-y-4">
@@ -18,6 +34,15 @@ export default function AdminUsers() {
           <RefreshCw className="h-3.5 w-3.5" /> Refresh
         </button>
       </header>
+
+      <section className="rounded-2xl bg-card border border-primary/30 p-4 space-y-3">
+        <div className="flex items-center gap-2 text-sm font-semibold"><Shield className="h-4 w-4 text-primary" /> Staff Access</div>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <input value={staffEmail} onChange={(e) => setStaffEmail(e.target.value)} placeholder="user@gmail.com" className="field h-10 pl-3 pr-3 flex-1" />
+          <button disabled={staffBusy} onClick={() => setStaff(true)} className="inline-flex items-center justify-center gap-2 h-10 px-4 rounded-xl bg-primary text-primary-foreground text-sm font-semibold disabled:opacity-60"><UserPlus className="h-4 w-4" /> Make Staff</button>
+          <button disabled={staffBusy} onClick={() => setStaff(false)} className="h-10 px-4 rounded-xl border border-border text-sm hover:bg-surface-2 disabled:opacity-60">Remove</button>
+        </div>
+      </section>
 
       <div className="rounded-2xl bg-card border border-border overflow-hidden">
         <div className="hidden sm:grid grid-cols-[1fr_120px_120px_140px] px-4 py-3 text-xs uppercase tracking-wider text-muted-foreground border-b border-border">
