@@ -7,7 +7,7 @@ import { FluxaWordmark } from "@/components/FluxaWordmark";
 import { useCredits } from "@/hooks/useCredits";
 import { DiscordButton } from "@/components/DiscordButton";
 import { AnnouncementBanner } from "@/components/AnnouncementBanner";
-import { ADMIN_EMAIL } from "@/lib/adminStore";
+import { useAccessRoles } from "@/hooks/useAccessRoles";
 import { toast } from "sonner";
 
 interface Chat {
@@ -22,6 +22,7 @@ export const AppShell = () => {
   const location = useLocation();
   const params = useParams();
   const { credits } = useCredits();
+  const { isAdmin, isStaff } = useAccessRoles();
   const [chats, setChats] = useState<Chat[]>([]);
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
@@ -153,12 +154,20 @@ export const AppShell = () => {
 
         {/* Fluxa AI Pro upgrade card */}
         <div className="px-3 pb-3 space-y-2">
-          {user?.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase() && (
+          {isAdmin && (
             <Link
               to="/admin"
               className="w-full flex items-center gap-2 h-10 px-3 rounded-xl bg-primary/10 border border-primary/40 text-primary text-sm font-semibold hover:bg-primary/15"
             >
               <Shield className="h-4 w-4" /> Admin Panel
+            </Link>
+          )}
+          {isStaff && !isAdmin && (
+            <Link
+              to="/staff"
+              className="w-full flex items-center gap-2 h-10 px-3 rounded-xl bg-primary/10 border border-primary/40 text-primary text-sm font-semibold hover:bg-primary/15"
+            >
+              <Shield className="h-4 w-4" /> Staff Panel
             </Link>
           )}
           <div className="rounded-xl border border-border bg-surface-2/60 p-3 flex items-center gap-3">

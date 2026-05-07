@@ -2,7 +2,6 @@ import { ReactNode, useEffect, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { ADMIN_EMAIL } from "@/lib/adminStore";
 
 export const AdminGuard = ({ children }: { children: ReactNode }) => {
   const location = useLocation();
@@ -18,17 +17,9 @@ export const AdminGuard = ({ children }: { children: ReactNode }) => {
     }
     let cancelled = false;
     (async () => {
-      const { data, error } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id)
-        .eq("role", "admin")
-        .maybeSingle();
+      const { data, error } = await supabase.rpc("is_admin");
       if (cancelled) return;
-      // Fall back to email check if roles row not yet inserted
-      const ok = !!data && !error
-        ? true
-        : user.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+      const ok = data === true && !error;
       setIsAdmin(ok);
       setChecking(false);
     })();

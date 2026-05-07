@@ -1,8 +1,12 @@
 import { Link } from "react-router-dom";
 import { Zap, Star } from "lucide-react";
 import { TOOLS } from "@/lib/tools";
+import { useCustomTools } from "@/hooks/useCustomTools";
 
 export default function Tools() {
+  const { tools: customTools } = useCustomTools();
+  const tools = [...customTools, ...TOOLS.filter((tool) => !customTools.some((custom) => custom.id === tool.id))];
+
   return (
     <div className="h-full overflow-y-auto">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 pb-10 space-y-6">
@@ -11,7 +15,7 @@ export default function Tools() {
           <p className="text-sm text-muted-foreground mt-1">Browse every Fluxa AI tool in one place.</p>
         </header>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-          {TOOLS.map((t) => (
+          {tools.map((t) => (
             <Link
               key={t.id}
               to={`/tools/${t.id}`}

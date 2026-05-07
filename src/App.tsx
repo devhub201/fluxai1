@@ -30,6 +30,8 @@ import AdminAnnouncements from "./pages/admin/AdminAnnouncements";
 import AdminLogs from "./pages/admin/AdminLogs";
 import AdminSettings from "./pages/admin/AdminSettings";
 import PublishedSite from "./pages/PublishedSite";
+import StaffPanel from "./pages/staff/StaffPanel";
+import { StaffGuard } from "./pages/staff/StaffGuard";
 
 const queryClient = new QueryClient();
 
@@ -58,6 +60,8 @@ const App = () => (
               <Route path="/history" element={<History />} />
               <Route path="/settings" element={<Settings />} />
             </Route>
+
+            <Route path="/staff" element={<StaffGuard><StaffPanel /></StaffGuard>} />
 
             {/* Admin */}
             <Route path="/admin/login" element={<AdminLogin />} />

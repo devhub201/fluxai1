@@ -12,6 +12,7 @@ import JSZip from "jszip";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { useCustomTools } from "@/hooks/useCustomTools";
 
 type GeneratedFile = { path: string; content: string };
 type AssistantPlan = {
@@ -138,7 +139,8 @@ function CodeBlock({ language, value }: { language: string; value: string }) {
 export default function ToolPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const tool = getTool(id ?? "");
+  const { tools: customTools } = useCustomTools();
+  const tool = getTool(id ?? "") ?? customTools.find((item) => item.id === id);
   const { credits, dailyCredits, applySpendResult } = useCredits();
   const [prompt, setPrompt] = useState("");
   const [language, setLanguage] = useState("JavaScript");
