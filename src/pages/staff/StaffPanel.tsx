@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Bot, CheckCircle2, Clock, Flag, MessageSquare, RefreshCw, Shield, Sparkles, UserRound } from "lucide-react";
+import { ArrowLeft, Bot, CheckCircle2, Clock, Flag, MessageSquare, RefreshCw, Shield, Sparkles, UserRound, type LucideIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminData } from "@/hooks/useAdminData";
 import { Button } from "@/components/ui/button";
@@ -139,7 +139,7 @@ export default function StaffPanel() {
   );
 }
 
-const Metric = ({ icon: Icon, label, value }: { icon: typeof Flag; label: string; value: string }) => (
+const Metric = ({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: string }) => (
   <div className="rounded-2xl bg-card border border-border p-4">
     <div className="h-10 w-10 rounded-xl border border-primary/30 bg-primary/10 text-primary flex items-center justify-center mb-3"><Icon className="h-5 w-5" /></div>
     <div className="text-2xl font-bold">{value}</div>
