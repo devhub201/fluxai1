@@ -161,11 +161,13 @@ export default function ToolPage() {
   const [seoDescription, setSeoDescription] = useState("");
   const [ogImageUrl, setOgImageUrl] = useState("");
   const [sitemapUrl, setSitemapUrl] = useState("");
+  const [customDomain, setCustomDomain] = useState("");
   const [publishing, setPublishing] = useState(false);
   const [publishedUrl, setPublishedUrl] = useState<string | null>(null);
   const [generationJob, setGenerationJob] = useState<WebsiteJob | null>(null);
   const [publishedSites, setPublishedSites] = useState<PublishedSiteRow[]>([]);
   const [sitesLoading, setSitesLoading] = useState(false);
+  const [refinePrompt, setRefinePrompt] = useState("");
 
   const Icon = tool?.icon;
   const isImage = tool?.id === "ai-image-generator";
@@ -326,6 +328,7 @@ export default function ToolPage() {
             seoDescription,
             ogImageUrl,
             sitemapUrl,
+            customDomain: customDomain.trim() || null,
           },
         },
       );
