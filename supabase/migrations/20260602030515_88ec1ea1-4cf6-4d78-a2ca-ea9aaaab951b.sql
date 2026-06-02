@@ -1,0 +1,2 @@
+ALTER TABLE public.published_sites ADD COLUMN IF NOT EXISTS custom_domain text;
+CREATE UNIQUE INDEX IF NOT EXISTS published_sites_custom_domain_unique ON public.published_sites (lower(custom_domain)) WHERE custom_domain IS NOT NULL AND length(custom_domain) > 0;
