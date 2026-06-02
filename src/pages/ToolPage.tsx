@@ -161,11 +161,13 @@ export default function ToolPage() {
   const [seoDescription, setSeoDescription] = useState("");
   const [ogImageUrl, setOgImageUrl] = useState("");
   const [sitemapUrl, setSitemapUrl] = useState("");
+  const [customDomain, setCustomDomain] = useState("");
   const [publishing, setPublishing] = useState(false);
   const [publishedUrl, setPublishedUrl] = useState<string | null>(null);
   const [generationJob, setGenerationJob] = useState<WebsiteJob | null>(null);
   const [publishedSites, setPublishedSites] = useState<PublishedSiteRow[]>([]);
   const [sitesLoading, setSitesLoading] = useState(false);
+  const [refinePrompt, setRefinePrompt] = useState("");
 
   const Icon = tool?.icon;
   const isImage = tool?.id === "ai-image-generator";
@@ -237,8 +239,9 @@ export default function ToolPage() {
     );
   }
 
-  const handleGenerate = async () => {
-    if (!prompt.trim()) {
+  const handleGenerate = async (overridePrompt?: string) => {
+    const effectivePrompt = (overridePrompt ?? prompt).trim();
+    if (!effectivePrompt) {
       toast.error("Please enter a prompt");
       return;
     }
@@ -256,7 +259,7 @@ export default function ToolPage() {
     setGenerationJob(isWebsite ? { id: "", status: "queued", step: "plan", progress: 3, title: null, summary: null, files: null, assistant_plan: null, credits: null, error_message: null } : null);
     try {
       const { data, error } = await supabase.functions.invoke<ToolRunResponse>("tool-run", {
-        body: { toolId: tool.id, prompt, options: { language, assistantMode: isWebsite ? assistantMode : false }, creditCost: tool.credits, dailyCredits, mode },
+        body: { toolId: tool.id, prompt: effectivePrompt, options: { language, assistantMode: isWebsite ? assistantMode : false }, creditCost: tool.credits, dailyCredits, mode },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
@@ -280,6 +283,19 @@ export default function ToolPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleRefine = async () => {
+    if (!refinePrompt.trim()) {
+      toast.error("Tell us what to change or add");
+      return;
+    }
+    const combined = `Original request: ${prompt || generatedTitle || "(website)"}\n\nExisting site title: ${generatedTitle || "untitled"}\n\nRefinement / new feature to add: ${refinePrompt}\n\nPlease regenerate the full site incorporating this change while keeping the original purpose intact.`;
+    setPrompt(combined);
+    const req = refinePrompt;
+    setRefinePrompt("");
+    await handleGenerate(combined);
+    toast.success(`Applied refinement: ${req.slice(0, 60)}${req.length > 60 ? "…" : ""}`);
   };
 
   const handleOpenPublish = () => {
@@ -326,6 +342,7 @@ export default function ToolPage() {
             seoDescription,
             ogImageUrl,
             sitemapUrl,
+            customDomain: customDomain.trim() || null,
           },
         },
       );
@@ -512,7 +529,7 @@ export default function ToolPage() {
             )}
 
             <button
-              onClick={handleGenerate}
+              onClick={() => handleGenerate()}
               disabled={loading}
               className="w-full h-12 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 active:scale-[0.99] transition-all inline-flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed shadow-[0_0_24px_hsl(var(--primary)/0.35)]"
             >
@@ -658,6 +675,22 @@ export default function ToolPage() {
                           {file.path}
                         </div>
                       ))}
+                    </div>
+                  )}
+                  {isWebsite && generatedFiles.length > 0 && (
+                    <div className="rounded-xl border border-primary/40 bg-primary/5 p-3 space-y-2">
+                      <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary">
+                        <Wand2 className="h-3.5 w-3.5" /> Refine / add a feature
+                      </div>
+                      <textarea
+                        value={refinePrompt}
+                        onChange={(e) => setRefinePrompt(e.target.value)}
+                        placeholder="e.g. Add a pricing page with 3 tiers, dark mode toggle, and a contact form."
+                        className="w-full min-h-16 rounded-lg bg-surface-2 border border-border/60 p-2 text-xs outline-none focus:border-primary/60"
+                      />
+                      <Button size="sm" onClick={handleRefine} disabled={loading}>
+                        {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />} Apply refinement
+                      </Button>
                     </div>
                   )}
                 </div>
@@ -821,6 +854,11 @@ export default function ToolPage() {
               <div className="space-y-1.5">
                 <label className="text-xs text-muted-foreground">Sitemap URL</label>
                 <Input value={sitemapUrl} onChange={(e) => setSitemapUrl(e.target.value)} placeholder="https://.../sitemap.xml" />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs text-muted-foreground inline-flex items-center gap-1.5"><Globe className="h-3 w-3" /> Custom domain (optional)</label>
+                <Input value={customDomain} onChange={(e) => setCustomDomain(e.target.value)} placeholder="yourbrand.com" />
+                <p className="text-[10.5px] text-muted-foreground">Point your domain's DNS to <span className="font-mono text-primary">fluxai1.lovable.app</span> with an A/CNAME record, then save it here to claim it for this site.</p>
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setPublishOpen(false)} disabled={publishing}>Cancel</Button>

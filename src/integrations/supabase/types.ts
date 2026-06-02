@@ -289,6 +289,7 @@ export type Database = {
       published_sites: {
         Row: {
           created_at: string
+          custom_domain: string | null
           files: Json
           id: string
           is_published: boolean
@@ -305,6 +306,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          custom_domain?: string | null
           files?: Json
           id?: string
           is_published?: boolean
@@ -321,6 +323,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          custom_domain?: string | null
           files?: Json
           id?: string
           is_published?: boolean

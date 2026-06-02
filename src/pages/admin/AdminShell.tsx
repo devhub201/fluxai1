@@ -14,6 +14,7 @@ import {
   Zap,
   Search,
   Bell,
+  Sparkles,
 } from "lucide-react";
 import { setSession } from "@/lib/adminStore";
 import { useAdminStore } from "@/hooks/useAdminStore";
@@ -25,6 +26,7 @@ const nav = [
   { to: "/admin", end: true, label: "Dashboard", icon: LayoutDashboard },
   { to: "/admin/users", label: "Users", icon: Users },
   { to: "/admin/tools", label: "Tools", icon: Wrench },
+  { to: "/admin/ai", label: "AI Copilot", icon: Sparkles },
   { to: "/admin/credits", label: "Credits", icon: Coins },
   { to: "/admin/announcements", label: "Announcements", icon: Megaphone },
   { to: "/admin/logs", label: "Logs", icon: ScrollText },
