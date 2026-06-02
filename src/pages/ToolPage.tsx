@@ -855,6 +855,11 @@ export default function ToolPage() {
                 <label className="text-xs text-muted-foreground">Sitemap URL</label>
                 <Input value={sitemapUrl} onChange={(e) => setSitemapUrl(e.target.value)} placeholder="https://.../sitemap.xml" />
               </div>
+              <div className="space-y-1.5">
+                <label className="text-xs text-muted-foreground inline-flex items-center gap-1.5"><Globe className="h-3 w-3" /> Custom domain (optional)</label>
+                <Input value={customDomain} onChange={(e) => setCustomDomain(e.target.value)} placeholder="yourbrand.com" />
+                <p className="text-[10.5px] text-muted-foreground">Point your domain's DNS to <span className="font-mono text-primary">fluxai1.lovable.app</span> with an A/CNAME record, then save it here to claim it for this site.</p>
+              </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setPublishOpen(false)} disabled={publishing}>Cancel</Button>
                 <Button onClick={handlePublish} disabled={publishing}>
