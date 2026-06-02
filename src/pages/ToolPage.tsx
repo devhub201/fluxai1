@@ -239,8 +239,9 @@ export default function ToolPage() {
     );
   }
 
-  const handleGenerate = async () => {
-    if (!prompt.trim()) {
+  const handleGenerate = async (overridePrompt?: string) => {
+    const effectivePrompt = (overridePrompt ?? prompt).trim();
+    if (!effectivePrompt) {
       toast.error("Please enter a prompt");
       return;
     }
@@ -258,7 +259,7 @@ export default function ToolPage() {
     setGenerationJob(isWebsite ? { id: "", status: "queued", step: "plan", progress: 3, title: null, summary: null, files: null, assistant_plan: null, credits: null, error_message: null } : null);
     try {
       const { data, error } = await supabase.functions.invoke<ToolRunResponse>("tool-run", {
-        body: { toolId: tool.id, prompt, options: { language, assistantMode: isWebsite ? assistantMode : false }, creditCost: tool.credits, dailyCredits, mode },
+        body: { toolId: tool.id, prompt: effectivePrompt, options: { language, assistantMode: isWebsite ? assistantMode : false }, creditCost: tool.credits, dailyCredits, mode },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
@@ -282,6 +283,19 @@ export default function ToolPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleRefine = async () => {
+    if (!refinePrompt.trim()) {
+      toast.error("Tell us what to change or add");
+      return;
+    }
+    const combined = `Original request: ${prompt || generatedTitle || "(website)"}\n\nExisting site title: ${generatedTitle || "untitled"}\n\nRefinement / new feature to add: ${refinePrompt}\n\nPlease regenerate the full site incorporating this change while keeping the original purpose intact.`;
+    setPrompt(combined);
+    const req = refinePrompt;
+    setRefinePrompt("");
+    await handleGenerate(combined);
+    toast.success(`Applied refinement: ${req.slice(0, 60)}${req.length > 60 ? "…" : ""}`);
   };
 
   const handleOpenPublish = () => {
