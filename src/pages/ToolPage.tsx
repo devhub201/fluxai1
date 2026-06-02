@@ -677,6 +677,22 @@ export default function ToolPage() {
                       ))}
                     </div>
                   )}
+                  {isWebsite && generatedFiles.length > 0 && (
+                    <div className="rounded-xl border border-primary/40 bg-primary/5 p-3 space-y-2">
+                      <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary">
+                        <Wand2 className="h-3.5 w-3.5" /> Refine / add a feature
+                      </div>
+                      <textarea
+                        value={refinePrompt}
+                        onChange={(e) => setRefinePrompt(e.target.value)}
+                        placeholder="e.g. Add a pricing page with 3 tiers, dark mode toggle, and a contact form."
+                        className="w-full min-h-16 rounded-lg bg-surface-2 border border-border/60 p-2 text-xs outline-none focus:border-primary/60"
+                      />
+                      <Button size="sm" onClick={handleRefine} disabled={loading}>
+                        {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />} Apply refinement
+                      </Button>
+                    </div>
+                  )}
                 </div>
               )}
 
