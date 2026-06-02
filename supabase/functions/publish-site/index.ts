@@ -37,7 +37,7 @@ serve(async (req) => {
     if (action === "list") {
       const { data, error } = await adminClient
         .from("published_sites")
-        .select("id, slug, title, is_published, updated_at, created_at, model, seo_title, seo_description, og_image_url, sitemap_url")
+        .select("id, slug, title, is_published, updated_at, created_at, model, seo_title, seo_description, og_image_url, sitemap_url, custom_domain")
         .eq("user_id", user.id)
         .order("updated_at", { ascending: false });
       if (error) return json({ error: error.message }, 500);
@@ -65,7 +65,7 @@ serve(async (req) => {
     }
 
     // publish (create or update)
-    const { slug: rawSlug, title, files, prompt, model, seoTitle, seoDescription, ogImageUrl, sitemapUrl } = body;
+    const { slug: rawSlug, title, files, prompt, model, seoTitle, seoDescription, ogImageUrl, sitemapUrl, customDomain } = body;
     if (!Array.isArray(files) || files.length === 0) return json({ error: "files required" }, 400);
     let slug = slugify(String(rawSlug ?? title ?? "site"));
 
@@ -78,6 +78,20 @@ serve(async (req) => {
         .maybeSingle();
       if (!existing || existing.user_id === user.id) break;
       slug = `${slug}-${Math.random().toString(36).slice(2, 6)}`;
+    }
+
+    const cleanDomain = customDomain
+      ? String(customDomain).trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\/.*$/, "").slice(0, 253)
+      : null;
+    if (cleanDomain) {
+      const { data: domainOwner } = await adminClient
+        .from("published_sites")
+        .select("id, user_id")
+        .eq("custom_domain", cleanDomain)
+        .maybeSingle();
+      if (domainOwner && domainOwner.user_id !== user.id) {
+        return json({ error: "That domain is already claimed by another site." }, 409);
+      }
     }
 
     const { data: upserted, error: upErr } = await adminClient
@@ -93,6 +107,7 @@ serve(async (req) => {
           seo_description: seoDescription ? String(seoDescription).slice(0, 180) : null,
           og_image_url: ogImageUrl ? String(ogImageUrl).slice(0, 1000) : null,
           sitemap_url: sitemapUrl ? String(sitemapUrl).slice(0, 1000) : null,
+          custom_domain: cleanDomain,
           files,
           is_published: true,
         },
@@ -102,7 +117,7 @@ serve(async (req) => {
       .single();
 
     if (upErr) return json({ error: upErr.message }, 500);
-    return json({ ok: true, slug: upserted.slug, id: upserted.id });
+    return json({ ok: true, slug: upserted.slug, id: upserted.id, customDomain: cleanDomain });
   } catch (e) {
     console.error("publish-site error", e);
     return json({ error: e instanceof Error ? e.message : "Unknown error" }, 500);
