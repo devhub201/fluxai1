@@ -33,6 +33,7 @@ import PublishedSite from "./pages/PublishedSite";
 import StaffPanel from "./pages/staff/StaffPanel";
 import { StaffGuard } from "./pages/staff/StaffGuard";
 import AdminAI from "./pages/admin/AdminAI";
+import AdminPower from "./pages/admin/AdminPower";
 
 const queryClient = new QueryClient();
 
@@ -71,6 +72,7 @@ const App = () => (
               <Route path="/admin/users" element={<AdminUsers />} />
               <Route path="/admin/tools" element={<AdminTools />} />
               <Route path="/admin/ai" element={<AdminAI />} />
+              <Route path="/admin/power" element={<AdminPower />} />
               <Route path="/admin/credits" element={<AdminCredits />} />
               <Route path="/admin/announcements" element={<AdminAnnouncements />} />
               <Route path="/admin/logs" element={<AdminLogs />} />
