@@ -36,20 +36,59 @@ async function webSearch(query: string, limit = 6): Promise<{ title: string; url
 
 // ---------- Image generation ----------
 async function generateImage(prompt: string, key: string): Promise<string> {
-  const r = await fetch(`${GATEWAY}/images/generations`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
+  const attempts: Array<{ model: string; body: any; endpoint: string }> = [
+    {
+      model: "openai/gpt-image-2",
+      endpoint: `${GATEWAY}/images/generations`,
+      body: { model: "openai/gpt-image-2", prompt, size: "1024x1024", quality: "low", n: 1 },
+    },
+    {
+      model: "google/gemini-3.1-flash-image-preview",
+      endpoint: `${GATEWAY}/chat/completions`,
+      body: {
+        model: "google/gemini-3.1-flash-image-preview",
+        messages: [{ role: "user", content: prompt }],
+        modalities: ["image", "text"],
+      },
+    },
+    {
       model: "google/gemini-2.5-flash-image",
-      prompt,
-      n: 1,
-    }),
-  });
-  if (!r.ok) throw new Error(`Image gen failed: ${r.status} ${await r.text()}`);
-  const j = await r.json();
-  const b64 = j?.data?.[0]?.b64_json;
-  if (!b64) throw new Error("No image returned");
-  return `data:image/png;base64,${b64}`;
+      endpoint: `${GATEWAY}/chat/completions`,
+      body: {
+        model: "google/gemini-2.5-flash-image",
+        messages: [{ role: "user", content: prompt }],
+        modalities: ["image", "text"],
+      },
+    },
+  ];
+
+  let lastErr = "";
+  for (const a of attempts) {
+    try {
+      const r = await fetch(a.endpoint, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+        body: JSON.stringify(a.body),
+      });
+      if (!r.ok) {
+        lastErr = `${a.model}: ${r.status} ${(await r.text()).slice(0, 200)}`;
+        console.error(lastErr);
+        continue;
+      }
+      const j = await r.json();
+      const b64 = j?.data?.[0]?.b64_json;
+      if (b64) return `data:image/png;base64,${b64}`;
+      const imgs = j?.choices?.[0]?.message?.images;
+      const url = imgs?.[0]?.image_url?.url ?? imgs?.[0]?.url;
+      if (typeof url === "string" && (url.startsWith("data:image") || url.startsWith("http"))) return url;
+      lastErr = `${a.model}: no image in response`;
+      console.error(lastErr, JSON.stringify(j).slice(0, 300));
+    } catch (e) {
+      lastErr = `${a.model}: ${e instanceof Error ? e.message : String(e)}`;
+      console.error(lastErr);
+    }
+  }
+  throw new Error(lastErr || "Image generation failed");
 }
 
 // ---------- Build multimodal message ----------
