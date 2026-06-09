@@ -14,8 +14,8 @@ type InMsg = { role: "user" | "assistant" | "system"; content: string; attachmen
 function looksLikeImagePrompt(text: string) {
   const value = text.toLowerCase().trim();
   return /^\/image\b/.test(value)
-    || /\b(generate|create|make|draw|design|render)\b[\s\S]{0,90}\b(image|picture|photo|art|poster|logo|wallpaper|avatar|illustration)\b/.test(value)
-    || /\b(image|picture|photo|art|poster|logo|wallpaper|avatar|illustration)\b[\s\S]{0,90}\b(of|for|about)\b/.test(value);
+    || /\b(generate|create|make|draw|design|render|banao|bana|banado)\b[\s\S]{0,90}\b(image|inage|imge|picture|photo|art|poster|logo|wallpaper|avatar|illustration|tasveer)\b/.test(value)
+    || /\b(image|inage|imge|picture|photo|art|poster|logo|wallpaper|avatar|illustration|tasveer)\b[\s\S]{0,90}\b(of|for|about|banao|bana|banado)\b/.test(value);
 }
 
 function looksLikeFreshSearchPrompt(text: string) {
