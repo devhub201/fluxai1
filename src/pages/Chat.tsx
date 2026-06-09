@@ -117,8 +117,9 @@ const Chat = () => {
 
     setStreaming(true);
     let assistantSoFar = "";
-    const upsert = (chunk: string) => {
-      assistantSoFar += chunk;
+    const upsert = (chunk: string, replace = false) => {
+      if (replace) assistantSoFar = chunk;
+      else assistantSoFar += chunk;
       setMessages((prev) => {
         const last = prev[prev.length - 1];
         if (last?.role === "assistant") return prev.map((m, i) => (i === prev.length - 1 ? { ...m, content: assistantSoFar } : m));
@@ -161,8 +162,9 @@ const Chat = () => {
           if (j === "[DONE]") { done = true; break; }
           try {
             const p = JSON.parse(j);
-            const c = p.choices?.[0]?.delta?.content;
-            if (c) upsert(c);
+            const delta = p.choices?.[0]?.delta;
+            if (delta?.replace !== undefined) upsert(delta.replace, true);
+            else if (delta?.content) upsert(delta.content);
           } catch { buf = line + "\n" + buf; break; }
         }
       }
