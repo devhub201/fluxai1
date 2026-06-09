@@ -353,7 +353,26 @@ const Bubble = ({ msg }: { msg: Msg }) => {
               return <CodeBlock className={className}>{children}</CodeBlock>;
             },
             pre({ children }: any) { return <>{children}</>; },
-            img({ src, alt }: any) { return <img src={src} alt={alt} className="rounded-xl my-3 max-w-full" />; },
+            img({ src, alt }: any) {
+              const isGenerated = typeof src === "string" && src.startsWith("data:image");
+              const isRendering = /generating|rendering/i.test(String(alt ?? ""));
+              if (!isGenerated) return <img src={src} alt={alt} className="rounded-xl my-3 max-w-full" />;
+              return (
+                <div className="my-3 w-full max-w-md overflow-hidden rounded-2xl border border-border bg-surface-2 shadow-lg shadow-background/20">
+                  <div className="flex items-center justify-between px-4 py-3 text-sm font-semibold text-foreground">
+                    <span>{isRendering ? "Creating image" : "Generated image"}</span>
+                    {isRendering && <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />}
+                  </div>
+                  <div className="aspect-square bg-muted overflow-hidden">
+                    <img
+                      src={src}
+                      alt={alt || "Generated image"}
+                      className={`h-full w-full object-cover transition-[filter,transform] duration-500 ${isRendering ? "blur-md scale-105" : "blur-0 scale-100"}`}
+                    />
+                  </div>
+                </div>
+              );
+            },
             a({ href, children }: any) { return <a href={href} target="_blank" rel="noreferrer" className="text-primary underline">{children}</a>; },
           }}
         >
