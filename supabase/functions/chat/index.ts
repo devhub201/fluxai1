@@ -11,18 +11,24 @@ const GATEWAY = "https://ai.gateway.lovable.dev/v1";
 type Attachment = { kind: "image"; dataUrl: string; name?: string } | { kind: "text"; text: string; name?: string };
 type InMsg = { role: "user" | "assistant" | "system"; content: string; attachments?: Attachment[] };
 
-// ---------- Web search (DuckDuckGo HTML, no API key) ----------
-async function webSearch(query: string, limit = 6): Promise<{ title: string; url: string; snippet: string }[]> {
+// ---------- Web search (DuckDuckGo HTML) ----------
+async function webSearch(query: string, limit = 8): Promise<{ title: string; url: string; snippet: string }[]> {
   try {
-    const r = await fetch(`https://duckduckgo.com/html/?q=${encodeURIComponent(query)}`, {
-      headers: { "User-Agent": "Mozilla/5.0 (compatible; FluxaAI/1.0)" },
+    const r = await fetch(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15",
+        "Accept": "text/html,application/xhtml+xml",
+      },
     });
     const html = await r.text();
     const results: { title: string; url: string; snippet: string }[] = [];
     const re = /<a[^>]+class="result__a"[^>]+href="([^"]+)"[^>]*>([\s\S]*?)<\/a>[\s\S]*?<a[^>]+class="result__snippet"[^>]*>([\s\S]*?)<\/a>/g;
     let m: RegExpExecArray | null;
     while ((m = re.exec(html)) && results.length < limit) {
-      let url = decodeURIComponent(m[1].replace(/^\/\/duckduckgo\.com\/l\/\?uddg=/, "").split("&")[0]);
+      let url = m[1];
+      const uddg = url.match(/[?&]uddg=([^&]+)/);
+      if (uddg) url = decodeURIComponent(uddg[1]);
+      url = url.replace(/^\/\//, "https://");
       const title = m[2].replace(/<[^>]+>/g, "").trim();
       const snippet = m[3].replace(/<[^>]+>/g, "").trim();
       if (url.startsWith("http")) results.push({ title, url, snippet });
@@ -34,31 +40,44 @@ async function webSearch(query: string, limit = 6): Promise<{ title: string; url
   }
 }
 
-// ---------- Image generation ----------
-async function generateImage(prompt: string, key: string): Promise<string> {
-  const attempts: Array<{ model: string; body: any; endpoint: string }> = [
+// ---------- Streaming image generation: forward partials as markdown updates ----------
+async function streamImage(prompt: string, key: string, writer: WritableStreamDefaultWriter<Uint8Array>) {
+  const enc = new TextEncoder();
+  const sendChunk = async (content: string) => {
+    await writer.write(enc.encode(`data: ${JSON.stringify({ choices: [{ delta: { content } }] })}\n\n`));
+  };
+  const sendReplace = async (full: string) => {
+    // signal client to replace entire assistant content
+    await writer.write(enc.encode(`data: ${JSON.stringify({ choices: [{ delta: { replace: full } }] })}\n\n`));
+  };
+
+  await sendChunk(`🎨 *Generating image...*\n\n`);
+
+  const attempts = [
     {
-      model: "openai/gpt-image-2",
       endpoint: `${GATEWAY}/images/generations`,
-      body: { model: "openai/gpt-image-2", prompt, size: "1024x1024", quality: "low", n: 1 },
+      body: {
+        model: "openai/gpt-image-2",
+        prompt,
+        size: "1024x1024",
+        quality: "low",
+        n: 1,
+        stream: true,
+        partial_images: 2,
+      },
     },
     {
-      model: "google/gemini-3.1-flash-image-preview",
-      endpoint: `${GATEWAY}/chat/completions`,
+      endpoint: `${GATEWAY}/images/generations`,
       body: {
         model: "google/gemini-3.1-flash-image-preview",
-        messages: [{ role: "user", content: prompt }],
-        modalities: ["image", "text"],
+        prompt,
+        n: 1,
+        stream: true,
       },
     },
     {
-      model: "google/gemini-2.5-flash-image",
-      endpoint: `${GATEWAY}/chat/completions`,
-      body: {
-        model: "google/gemini-2.5-flash-image",
-        messages: [{ role: "user", content: prompt }],
-        modalities: ["image", "text"],
-      },
+      endpoint: `${GATEWAY}/images/generations`,
+      body: { model: "openai/gpt-image-1-mini", prompt, size: "1024x1024", n: 1 },
     },
   ];
 
@@ -71,24 +90,66 @@ async function generateImage(prompt: string, key: string): Promise<string> {
         body: JSON.stringify(a.body),
       });
       if (!r.ok) {
-        lastErr = `${a.model}: ${r.status} ${(await r.text()).slice(0, 200)}`;
+        lastErr = `${a.body.model}: ${r.status} ${(await r.text()).slice(0, 200)}`;
         console.error(lastErr);
         continue;
       }
-      const j = await r.json();
-      const b64 = j?.data?.[0]?.b64_json;
-      if (b64) return `data:image/png;base64,${b64}`;
-      const imgs = j?.choices?.[0]?.message?.images;
-      const url = imgs?.[0]?.image_url?.url ?? imgs?.[0]?.url;
-      if (typeof url === "string" && (url.startsWith("data:image") || url.startsWith("http"))) return url;
-      lastErr = `${a.model}: no image in response`;
-      console.error(lastErr, JSON.stringify(j).slice(0, 300));
+
+      // Non-streaming path (last fallback)
+      if (!(a.body as any).stream) {
+        const j = await r.json();
+        const b64 = j?.data?.[0]?.b64_json;
+        if (b64) {
+          await sendReplace(`![generated](data:image/png;base64,${b64})\n\n*Generated by Fluxa AI*`);
+          return;
+        }
+        lastErr = `${a.body.model}: no image in response`;
+        continue;
+      }
+
+      // SSE streaming path
+      const reader = r.body!.getReader();
+      const dec = new TextDecoder();
+      let buf = "";
+      let gotFinal = false;
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        const events = buf.split("\n\n");
+        buf = events.pop() ?? "";
+        for (const evt of events) {
+          const lines = evt.split("\n");
+          let eventName = "";
+          let dataStr = "";
+          for (const ln of lines) {
+            if (ln.startsWith("event:")) eventName = ln.slice(6).trim();
+            else if (ln.startsWith("data:")) dataStr += ln.slice(5).trim();
+          }
+          if (!dataStr || dataStr === "[DONE]") continue;
+          try {
+            const evtData = JSON.parse(dataStr);
+            const b64 = evtData.b64_json ?? evtData.data?.[0]?.b64_json;
+            const type = evtData.type ?? eventName;
+            if (b64) {
+              const isFinal = type === "image_generation.completed" || (!type && !evtData.partial_image_index);
+              const md = isFinal
+                ? `![generated](data:image/png;base64,${b64})\n\n*Generated by Fluxa AI*`
+                : `![generating...](data:image/png;base64,${b64})\n\n⏳ *Rendering...*`;
+              await sendReplace(md);
+              if (isFinal) gotFinal = true;
+            }
+          } catch { /* ignore parse */ }
+        }
+      }
+      if (gotFinal) return;
+      lastErr = `${a.body.model}: stream ended without final image`;
     } catch (e) {
-      lastErr = `${a.model}: ${e instanceof Error ? e.message : String(e)}`;
+      lastErr = `${a.body?.model}: ${e instanceof Error ? e.message : String(e)}`;
       console.error(lastErr);
     }
   }
-  throw new Error(lastErr || "Image generation failed");
+  await sendReplace(`❌ **Image generation failed.** ${lastErr}\n\nTry rephrasing your prompt or switching to chat mode.`);
 }
 
 // ---------- Build multimodal message ----------
@@ -118,41 +179,48 @@ serve(async (req) => {
 
     const lastUser = [...messages].reverse().find((m) => m.role === "user");
     const userText = lastUser?.content ?? "";
+    const today = new Date().toISOString().slice(0, 10);
+    const todayPretty = new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
 
-    // ---------- IMAGE MODE: return single JSON with image ----------
+    // ---------- IMAGE MODE: stream progressive image ----------
     if (mode === "image") {
-      try {
-        const url = await generateImage(userText, LOVABLE_API_KEY);
-        const md = `![generated image](${url})\n\n*Generated with Fluxa AI — prompt: "${userText}"*`;
-        // Stream this as a single SSE chunk so client logic is uniform
-        const sse = `data: ${JSON.stringify({ choices: [{ delta: { content: md } }] })}\n\ndata: [DONE]\n\n`;
-        return new Response(sse, { headers: { ...corsHeaders, "Content-Type": "text/event-stream" } });
-      } catch (e) {
-        return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "image gen failed" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      }
+      const stream = new TransformStream();
+      const writer = stream.writable.getWriter();
+      const enc = new TextEncoder();
+      (async () => {
+        try {
+          await streamImage(userText, LOVABLE_API_KEY, writer);
+        } catch (e) {
+          await writer.write(enc.encode(`data: ${JSON.stringify({ choices: [{ delta: { replace: `❌ ${e instanceof Error ? e.message : "image failed"}` } }] })}\n\n`));
+        } finally {
+          await writer.write(enc.encode(`data: [DONE]\n\n`));
+          await writer.close();
+        }
+      })();
+      return new Response(stream.readable, { headers: { ...corsHeaders, "Content-Type": "text/event-stream" } });
     }
 
-    // ---------- SEARCH / DEEP RESEARCH: enrich system with live results ----------
+    // ---------- SEARCH / DEEP RESEARCH ----------
     let researchContext = "";
     if (mode === "search" || mode === "deep") {
       const queries = mode === "deep"
-        ? [userText, `${userText} latest news 2026`, `${userText} detailed analysis`]
-        : [userText];
+        ? [userText, `${userText} ${today}`, `${userText} latest analysis`, `${userText} news this week`]
+        : [`${userText} ${today.slice(0, 4)}`, userText];
       const all: { title: string; url: string; snippet: string }[] = [];
       for (const q of queries) {
         const r = await webSearch(q, mode === "deep" ? 6 : 8);
         all.push(...r);
       }
       const seen = new Set<string>();
-      const dedup = all.filter((r) => (seen.has(r.url) ? false : (seen.add(r.url), true))).slice(0, mode === "deep" ? 15 : 8);
+      const dedup = all.filter((r) => (seen.has(r.url) ? false : (seen.add(r.url), true))).slice(0, mode === "deep" ? 18 : 10);
       researchContext = dedup.map((r, i) => `[${i + 1}] ${r.title}\n${r.url}\n${r.snippet}`).join("\n\n");
     }
 
-    const systemBase = "You are Fluxa AI — a friendly, expert multilingual assistant. Format code in fenced markdown blocks with the language. Use clear headings, bullet lists, tables, and bold for structure. Answer in the user's language (English, Hindi, Hinglish).";
+    const systemBase = `You are Fluxa AI — a friendly, expert multilingual assistant. Today is ${todayPretty}. Format code in fenced markdown blocks with the language. Use clear headings, bullet lists, tables, and bold for structure. Answer in the user's language (English, Hindi, Hinglish). Never claim your knowledge cutoff is earlier than today when live search results are provided.`;
     const systemExtra = mode === "deep"
-      ? `\n\nDEEP RESEARCH MODE. Synthesize the web sources below into a detailed, well-structured report with sections, key insights, and a "Sources" list using [n] markers.\n\nSOURCES:\n${researchContext}`
+      ? `\n\nDEEP RESEARCH MODE. Today's date is ${todayPretty}. Synthesize the live web sources below into a detailed, well-structured report with sections (Overview, Key Findings, Details, Implications), and a "Sources" list using [n] markers. Use ONLY the information in the sources for facts and dates.\n\nSOURCES (fetched ${today}):\n${researchContext}`
       : mode === "search"
-        ? `\n\nWEB SEARCH MODE. Use the live web results below to answer accurately and cite with [n] markers. End with a "Sources" list.\n\nLIVE RESULTS:\n${researchContext}`
+        ? `\n\nWEB SEARCH MODE. Today's date is ${todayPretty}. Use the live web results below to answer with accurate, current information. Cite with [n] markers. Do NOT use outdated training data — prefer the live results. End with a "Sources" list.\n\nLIVE RESULTS (fetched ${today}):\n${researchContext}`
         : "";
 
     const upstreamMessages = [
