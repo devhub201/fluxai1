@@ -11,6 +11,18 @@ const GATEWAY = "https://ai.gateway.lovable.dev/v1";
 type Attachment = { kind: "image"; dataUrl: string; name?: string } | { kind: "text"; text: string; name?: string };
 type InMsg = { role: "user" | "assistant" | "system"; content: string; attachments?: Attachment[] };
 
+function looksLikeImagePrompt(text: string) {
+  const value = text.toLowerCase().trim();
+  return /^\/image\b/.test(value)
+    || /\b(generate|create|make|draw|design|render|banao|bana|banado)\b[\s\S]{0,90}\b(image|inage|imge|picture|photo|art|poster|logo|wallpaper|avatar|illustration|tasveer)\b/.test(value)
+    || /\b(image|inage|imge|picture|photo|art|poster|logo|wallpaper|avatar|illustration|tasveer)\b[\s\S]{0,90}\b(of|for|about|banao|bana|banado)\b/.test(value);
+}
+
+function looksLikeFreshSearchPrompt(text: string) {
+  const value = text.toLowerCase();
+  return /\b(today|latest|current|recent|now|this week|2026|news|live|price|weather|score|election)\b/.test(value);
+}
+
 // ---------- Web search (DuckDuckGo HTML) ----------
 async function webSearch(query: string, limit = 8): Promise<{ title: string; url: string; snippet: string }[]> {
   try {
@@ -70,8 +82,8 @@ async function streamImage(prompt: string, key: string, writer: WritableStreamDe
       endpoint: `${GATEWAY}/images/generations`,
       body: {
         model: "google/gemini-3.1-flash-image-preview",
-        prompt,
-        n: 1,
+        messages: [{ role: "user", content: prompt }],
+        modalities: ["image", "text"],
         stream: true,
       },
     },
@@ -170,7 +182,7 @@ serve(async (req) => {
   try {
     const body = await req.json();
     const messages: InMsg[] = body.messages ?? [];
-    const mode: "chat" | "image" | "search" | "deep" = body.mode ?? "chat";
+    let mode: "chat" | "image" | "search" | "deep" = body.mode ?? "chat";
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY missing");
     if (!Array.isArray(messages) || messages.length === 0) {
@@ -181,6 +193,9 @@ serve(async (req) => {
     const userText = lastUser?.content ?? "";
     const today = new Date().toISOString().slice(0, 10);
     const todayPretty = new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+
+    if (mode === "chat" && looksLikeImagePrompt(userText)) mode = "image";
+    if (mode === "chat" && looksLikeFreshSearchPrompt(userText)) mode = "search";
 
     // ---------- IMAGE MODE: stream progressive image ----------
     if (mode === "image") {
@@ -216,7 +231,7 @@ serve(async (req) => {
       researchContext = dedup.map((r, i) => `[${i + 1}] ${r.title}\n${r.url}\n${r.snippet}`).join("\n\n");
     }
 
-    const systemBase = `You are Fluxa AI — a friendly, expert multilingual assistant. Today is ${todayPretty}. Format code in fenced markdown blocks with the language. Use clear headings, bullet lists, tables, and bold for structure. Answer in the user's language (English, Hindi, Hinglish). Never claim your knowledge cutoff is earlier than today when live search results are provided.`;
+    const systemBase = `You are Fluxa AI — a friendly, expert multilingual assistant. Today is ${todayPretty}. Format code in fenced markdown blocks with the language. Use clear headings, bullet lists, tables, and bold for structure. Answer in the user's language (English, Hindi, Hinglish). Never output hidden tool calls, JSON action objects, or fake tool names like dalle.text2im. Never claim your knowledge cutoff is earlier than today when live search results are provided.`;
     const systemExtra = mode === "deep"
       ? `\n\nDEEP RESEARCH MODE. Today's date is ${todayPretty}. Synthesize the live web sources below into a detailed, well-structured report with sections (Overview, Key Findings, Details, Implications), and a "Sources" list using [n] markers. Use ONLY the information in the sources for facts and dates.\n\nSOURCES (fetched ${today}):\n${researchContext}`
       : mode === "search"
