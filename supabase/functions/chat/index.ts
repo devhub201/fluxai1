@@ -1,267 +1,138 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+// AI Builder chat endpoint. Streams assistant text containing <lov-file path="...">...</lov-file>
+// blocks. The client parses these blocks and writes them to its virtual file system.
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const GATEWAY = "https://ai.gateway.lovable.dev/v1";
+const SYSTEM_PROMPT = `You are Lovable Builder, an AI that creates and edits single-page React apps. The user describes what they want; you respond with file blocks.
 
-type Attachment = { kind: "image"; dataUrl: string; name?: string } | { kind: "text"; text: string; name?: string };
-type InMsg = { role: "user" | "assistant" | "system"; content: string; attachments?: Attachment[] };
+# Output format
+For each file you create or update, emit:
 
-function looksLikeImagePrompt(text: string) {
-  const value = text.toLowerCase().trim();
-  return /^\/image\b/.test(value)
-    || /\b(generate|create|make|draw|design|render|banao|bana|banado)\b[\s\S]{0,90}\b(image|inage|imge|picture|photo|art|poster|logo|wallpaper|avatar|illustration|tasveer)\b/.test(value)
-    || /\b(image|inage|imge|picture|photo|art|poster|logo|wallpaper|avatar|illustration|tasveer)\b[\s\S]{0,90}\b(of|for|about|banao|bana|banado)\b/.test(value);
+<lov-file path="/src/SomeFile.tsx">
+...full file contents...
+</lov-file>
+
+Rules:
+- Always include the FULL file contents — never use placeholders or "..." comments.
+- Always include at least /src/App.tsx as the root component (default export).
+- Path must start with /src/ and end in .tsx, .ts, .jsx, or .js.
+- Outside the file blocks, write a short (1-3 sentence) plain-text summary of what changed. No markdown headings, no code fences.
+- Never wrap file contents in markdown code fences.
+
+# Runtime environment
+The app runs in a sandboxed iframe with:
+- React 18 + react-dom (auto JSX runtime, no need to import React)
+- react-router-dom v6 (use MemoryRouter if you need routing)
+- lucide-react icons
+- Tailwind CSS via the Play CDN (use Tailwind classes freely)
+- NO other npm packages, NO shadcn/ui, NO @/ aliases — use relative imports only
+- NO backend, NO fetch to real APIs, NO env vars
+- localStorage is available for persistence
+
+# Style guidelines
+- Modern, polished UI using Tailwind. Use rounded corners, subtle shadows, a coherent color palette.
+- Mobile-first responsive layouts.
+- Build the WHOLE feature the user asked for — don't stub things out.
+- Prefer small focused components in separate files (/src/components/Foo.tsx).
+
+# Editing existing apps
+When the user asks for a change, you'll see the current files. Re-emit only the files you change (full contents). Do not re-emit unchanged files.
+
+Begin.`;
+
+interface ChatRequest {
+  projectId: string;
+  userMessage: string;
+  history: { role: "user" | "assistant"; content: string }[];
+  currentFiles: Record<string, string>;
 }
 
-function looksLikeFreshSearchPrompt(text: string) {
-  const value = text.toLowerCase();
-  return /\b(today|latest|current|recent|now|this week|2026|news|live|price|weather|score|election)\b/.test(value);
-}
-
-// ---------- Web search (DuckDuckGo HTML) ----------
-async function webSearch(query: string, limit = 8): Promise<{ title: string; url: string; snippet: string }[]> {
-  try {
-    const r = await fetch(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15",
-        "Accept": "text/html,application/xhtml+xml",
-      },
-    });
-    const html = await r.text();
-    const results: { title: string; url: string; snippet: string }[] = [];
-    const re = /<a[^>]+class="result__a"[^>]+href="([^"]+)"[^>]*>([\s\S]*?)<\/a>[\s\S]*?<a[^>]+class="result__snippet"[^>]*>([\s\S]*?)<\/a>/g;
-    let m: RegExpExecArray | null;
-    while ((m = re.exec(html)) && results.length < limit) {
-      let url = m[1];
-      const uddg = url.match(/[?&]uddg=([^&]+)/);
-      if (uddg) url = decodeURIComponent(uddg[1]);
-      url = url.replace(/^\/\//, "https://");
-      const title = m[2].replace(/<[^>]+>/g, "").trim();
-      const snippet = m[3].replace(/<[^>]+>/g, "").trim();
-      if (url.startsWith("http")) results.push({ title, url, snippet });
-    }
-    return results;
-  } catch (e) {
-    console.error("search err", e);
-    return [];
-  }
-}
-
-// ---------- Streaming image generation: forward partials as markdown updates ----------
-async function streamImage(prompt: string, key: string, writer: WritableStreamDefaultWriter<Uint8Array>) {
-  const enc = new TextEncoder();
-  const sendChunk = async (content: string) => {
-    await writer.write(enc.encode(`data: ${JSON.stringify({ choices: [{ delta: { content } }] })}\n\n`));
-  };
-  const sendReplace = async (full: string) => {
-    // signal client to replace entire assistant content
-    await writer.write(enc.encode(`data: ${JSON.stringify({ choices: [{ delta: { replace: full } }] })}\n\n`));
-  };
-
-  await sendChunk(`🎨 *Generating image...*\n\n`);
-
-  const attempts = [
-    {
-      endpoint: `${GATEWAY}/images/generations`,
-      body: {
-        model: "openai/gpt-image-2",
-        prompt,
-        size: "1024x1024",
-        quality: "low",
-        n: 1,
-        stream: true,
-        partial_images: 2,
-      },
-    },
-    {
-      endpoint: `${GATEWAY}/images/generations`,
-      body: {
-        model: "google/gemini-3.1-flash-image-preview",
-        messages: [{ role: "user", content: prompt }],
-        modalities: ["image", "text"],
-        stream: true,
-      },
-    },
-    {
-      endpoint: `${GATEWAY}/images/generations`,
-      body: { model: "openai/gpt-image-1-mini", prompt, size: "1024x1024", n: 1 },
-    },
-  ];
-
-  let lastErr = "";
-  for (const a of attempts) {
-    try {
-      const r = await fetch(a.endpoint, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-        body: JSON.stringify(a.body),
-      });
-      if (!r.ok) {
-        lastErr = `${a.body.model}: ${r.status} ${(await r.text()).slice(0, 200)}`;
-        console.error(lastErr);
-        continue;
-      }
-
-      // Non-streaming path (last fallback)
-      if (!(a.body as any).stream) {
-        const j = await r.json();
-        const b64 = j?.data?.[0]?.b64_json;
-        if (b64) {
-          await sendReplace(`![generated](data:image/png;base64,${b64})\n\n*Generated by Fluxa AI*`);
-          return;
-        }
-        lastErr = `${a.body.model}: no image in response`;
-        continue;
-      }
-
-      // SSE streaming path
-      const reader = r.body!.getReader();
-      const dec = new TextDecoder();
-      let buf = "";
-      let gotFinal = false;
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buf += dec.decode(value, { stream: true });
-        const events = buf.split("\n\n");
-        buf = events.pop() ?? "";
-        for (const evt of events) {
-          const lines = evt.split("\n");
-          let eventName = "";
-          let dataStr = "";
-          for (const ln of lines) {
-            if (ln.startsWith("event:")) eventName = ln.slice(6).trim();
-            else if (ln.startsWith("data:")) dataStr += ln.slice(5).trim();
-          }
-          if (!dataStr || dataStr === "[DONE]") continue;
-          try {
-            const evtData = JSON.parse(dataStr);
-            const b64 = evtData.b64_json ?? evtData.data?.[0]?.b64_json;
-            const type = evtData.type ?? eventName;
-            if (b64) {
-              const isFinal = type === "image_generation.completed" || (!type && !evtData.partial_image_index);
-              const md = isFinal
-                ? `![generated](data:image/png;base64,${b64})\n\n*Generated by Fluxa AI*`
-                : `![generating...](data:image/png;base64,${b64})\n\n⏳ *Rendering...*`;
-              await sendReplace(md);
-              if (isFinal) gotFinal = true;
-            }
-          } catch { /* ignore parse */ }
-        }
-      }
-      if (gotFinal) return;
-      lastErr = `${a.body.model}: stream ended without final image`;
-    } catch (e) {
-      lastErr = `${a.body?.model}: ${e instanceof Error ? e.message : String(e)}`;
-      console.error(lastErr);
-    }
-  }
-  await sendReplace(`❌ **Image generation failed.** ${lastErr}\n\nTry rephrasing your prompt or switching to chat mode.`);
-}
-
-// ---------- Build multimodal message ----------
-function buildContent(m: InMsg): any {
-  if (!m.attachments || m.attachments.length === 0) return m.content;
-  const parts: any[] = [];
-  if (m.content) parts.push({ type: "text", text: m.content });
-  for (const a of m.attachments) {
-    if (a.kind === "image") parts.push({ type: "image_url", image_url: { url: a.dataUrl } });
-    else if (a.kind === "text") parts.push({ type: "text", text: `\n\n[Attached file: ${a.name ?? "file"}]\n${a.text}` });
-  }
-  return parts;
-}
-
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const body = await req.json();
-    const messages: InMsg[] = body.messages ?? [];
-    let mode: "chat" | "image" | "search" | "deep" = body.mode ?? "chat";
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY missing");
-    if (!Array.isArray(messages) || messages.length === 0) {
-      return new Response(JSON.stringify({ error: "messages required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
+    const body = (await req.json()) as ChatRequest;
+    const key = Deno.env.get("LOVABLE_API_KEY");
+    if (!key) return new Response("Missing LOVABLE_API_KEY", { status: 500, headers: corsHeaders });
 
-    const lastUser = [...messages].reverse().find((m) => m.role === "user");
-    const userText = lastUser?.content ?? "";
-    const today = new Date().toISOString().slice(0, 10);
-    const todayPretty = new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+    const fileContext = Object.keys(body.currentFiles ?? {}).length
+      ? `# Current project files\n\n${Object.entries(body.currentFiles)
+          .map(([p, c]) => `<lov-file path="${p}">\n${c}\n</lov-file>`)
+          .join("\n\n")}`
+      : "# Current project files\n\n(none yet — this is a new project)";
 
-    if (mode === "chat" && looksLikeImagePrompt(userText)) mode = "image";
-    if (mode === "chat" && looksLikeFreshSearchPrompt(userText)) mode = "search";
-
-    // ---------- IMAGE MODE: stream progressive image ----------
-    if (mode === "image") {
-      const stream = new TransformStream();
-      const writer = stream.writable.getWriter();
-      const enc = new TextEncoder();
-      (async () => {
-        try {
-          await streamImage(userText, LOVABLE_API_KEY, writer);
-        } catch (e) {
-          await writer.write(enc.encode(`data: ${JSON.stringify({ choices: [{ delta: { replace: `❌ ${e instanceof Error ? e.message : "image failed"}` } }] })}\n\n`));
-        } finally {
-          await writer.write(enc.encode(`data: [DONE]\n\n`));
-          await writer.close();
-        }
-      })();
-      return new Response(stream.readable, { headers: { ...corsHeaders, "Content-Type": "text/event-stream" } });
-    }
-
-    // ---------- SEARCH / DEEP RESEARCH ----------
-    let researchContext = "";
-    if (mode === "search" || mode === "deep") {
-      const queries = mode === "deep"
-        ? [userText, `${userText} ${today}`, `${userText} latest analysis`, `${userText} news this week`]
-        : [`${userText} ${today.slice(0, 4)}`, userText];
-      const all: { title: string; url: string; snippet: string }[] = [];
-      for (const q of queries) {
-        const r = await webSearch(q, mode === "deep" ? 6 : 8);
-        all.push(...r);
-      }
-      const seen = new Set<string>();
-      const dedup = all.filter((r) => (seen.has(r.url) ? false : (seen.add(r.url), true))).slice(0, mode === "deep" ? 18 : 10);
-      researchContext = dedup.map((r, i) => `[${i + 1}] ${r.title}\n${r.url}\n${r.snippet}`).join("\n\n");
-    }
-
-    const systemBase = `You are Fluxa AI — a friendly, expert multilingual assistant. Today is ${todayPretty}. Format code in fenced markdown blocks with the language. Use clear headings, bullet lists, tables, and bold for structure. Answer in the user's language (English, Hindi, Hinglish). Never output hidden tool calls, JSON action objects, or fake tool names like dalle.text2im. Never claim your knowledge cutoff is earlier than today when live search results are provided.`;
-    const systemExtra = mode === "deep"
-      ? `\n\nDEEP RESEARCH MODE. Today's date is ${todayPretty}. Synthesize the live web sources below into a detailed, well-structured report with sections (Overview, Key Findings, Details, Implications), and a "Sources" list using [n] markers. Use ONLY the information in the sources for facts and dates.\n\nSOURCES (fetched ${today}):\n${researchContext}`
-      : mode === "search"
-        ? `\n\nWEB SEARCH MODE. Today's date is ${todayPretty}. Use the live web results below to answer with accurate, current information. Cite with [n] markers. Do NOT use outdated training data — prefer the live results. End with a "Sources" list.\n\nLIVE RESULTS (fetched ${today}):\n${researchContext}`
-        : "";
-
-    const upstreamMessages = [
-      { role: "system", content: systemBase + systemExtra },
-      ...messages.map((m) => ({ role: m.role, content: buildContent(m) })),
+    const messages = [
+      { role: "system", content: SYSTEM_PROMPT },
+      { role: "system", content: fileContext },
+      ...body.history.map((m) => ({ role: m.role, content: m.content })),
+      { role: "user", content: body.userMessage },
     ];
 
-    const model = mode === "deep" ? "google/gemini-2.5-pro" : "google/gemini-3-flash-preview";
-
-    const response = await fetch(`${GATEWAY}/chat/completions`, {
+    const upstream = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
-      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ model, messages: upstreamMessages, stream: true }),
+      headers: {
+        "Content-Type": "application/json",
+        "Lovable-API-Key": key,
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-pro",
+        messages,
+        stream: true,
+      }),
     });
 
-    if (response.status === 429) return new Response(JSON.stringify({ error: "Rate limit exceeded. Try again shortly." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    if (response.status === 402) return new Response(JSON.stringify({ error: "AI credits exhausted." }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    if (!response.ok) {
-      const t = await response.text();
-      console.error("gateway err", response.status, t);
-      return new Response(JSON.stringify({ error: "AI gateway error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    if (!upstream.ok) {
+      const errText = await upstream.text();
+      return new Response(`AI gateway error: ${upstream.status} ${errText}`, {
+        status: upstream.status,
+        headers: corsHeaders,
+      });
     }
 
-    return new Response(response.body, { headers: { ...corsHeaders, "Content-Type": "text/event-stream" } });
+    // Re-stream as plain text deltas (one chunk per token).
+    const stream = new ReadableStream({
+      async start(controller) {
+        const reader = upstream.body!.getReader();
+        const decoder = new TextDecoder();
+        let buf = "";
+        try {
+          while (true) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            buf += decoder.decode(value, { stream: true });
+            const lines = buf.split("\n");
+            buf = lines.pop() ?? "";
+            for (const line of lines) {
+              const t = line.trim();
+              if (!t.startsWith("data:")) continue;
+              const payload = t.slice(5).trim();
+              if (payload === "[DONE]") { controller.close(); return; }
+              try {
+                const j = JSON.parse(payload);
+                const delta = j.choices?.[0]?.delta?.content;
+                if (delta) controller.enqueue(new TextEncoder().encode(delta));
+              } catch { /* ignore */ }
+            }
+          }
+        } catch (e) {
+          controller.error(e);
+        } finally {
+          controller.close();
+        }
+      },
+    });
+
+    return new Response(stream, {
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "text/plain; charset=utf-8",
+        "Cache-Control": "no-cache",
+      },
+    });
   } catch (e) {
-    console.error("chat error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    return new Response(`Server error: ${(e as Error).message}`, { status: 500, headers: corsHeaders });
   }
 });

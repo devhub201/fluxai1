@@ -1,82 +1,130 @@
-import { Link } from "react-router-dom";
-import { FluxaWordmark } from "@/components/FluxaWordmark";
+import { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { ArrowRight, Sparkles, Zap, Code2, Eye } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { ArrowRight, Code2, Image as ImageIcon, Globe2, Sparkles, Shield, Zap } from "lucide-react";
-import logo from "@/assets/fluxa-logo.png";
+import { toast } from "sonner";
 
-const Landing = () => {
+const examples = [
+  "A todo app with dark mode and local storage",
+  "A landing page for a coffee shop with menu",
+  "A pomodoro timer with sound and history",
+  "A markdown notes app with search",
+];
+
+export default function Landing() {
+  const navigate = useNavigate();
   const { user } = useAuth();
+  const [prompt, setPrompt] = useState("");
+  const [creating, setCreating] = useState(false);
+
+  async function start(text: string) {
+    if (!text.trim()) return;
+    if (!user) {
+      sessionStorage.setItem("pending-prompt", text);
+      navigate("/signin");
+      return;
+    }
+    setCreating(true);
+    try {
+      const title = text.length > 60 ? text.slice(0, 57) + "…" : text;
+      const { data, error } = await supabase
+        .from("builder_projects")
+        .insert({ user_id: user.id, title })
+        .select("id")
+        .single();
+      if (error) throw error;
+      sessionStorage.setItem(`builder-initial-${data.id}`, text);
+      navigate(`/build/${data.id}`);
+    } catch (e: any) {
+      toast.error(e.message || "Failed to create project");
+      setCreating(false);
+    }
+  }
 
   return (
-    <main className="min-h-screen w-full" style={{ background: "var(--page-bg)" }}>
-      {/* Nav */}
-      <header className="px-4 sm:px-8 py-5 flex items-center justify-between max-w-6xl mx-auto">
-        <FluxaWordmark size="sm" />
-        <nav className="flex items-center gap-2 sm:gap-4">
+    <div className="min-h-screen bg-gradient-to-b from-background to-muted/30">
+      <header className="flex items-center justify-between px-4 py-4 sm:px-8">
+        <div className="flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+            <Sparkles className="h-4 w-4" />
+          </div>
+          <span className="text-lg font-semibold">Lovable Builder</span>
+        </div>
+        <div className="flex items-center gap-2">
           {user ? (
-            <Link to="/chat" className="px-4 py-2 rounded-lg bg-primary text-primary-foreground font-semibold text-sm">
-              Open app
-            </Link>
+            <Button asChild size="sm" variant="ghost"><Link to="/projects">My projects</Link></Button>
           ) : (
             <>
-              <Link to="/signin" className="px-4 py-2 text-sm font-medium text-foreground hover:text-primary transition-colors">
-                Sign in
-              </Link>
-              <Link to="/signup" className="px-4 py-2 rounded-lg bg-primary text-primary-foreground font-semibold text-sm">
-                Get started
-              </Link>
+              <Button asChild size="sm" variant="ghost"><Link to="/signin">Sign in</Link></Button>
+              <Button asChild size="sm"><Link to="/signup">Sign up</Link></Button>
             </>
           )}
-        </nav>
+        </div>
       </header>
 
-      {/* Hero */}
-      <section className="px-4 sm:px-8 pt-12 sm:pt-20 pb-20 max-w-4xl mx-auto text-center">
-        <img src={logo} alt="Fluxa AI" width={96} height={96} className="h-20 w-20 sm:h-24 sm:w-24 mx-auto mb-6 drop-shadow-[0_0_40px_hsl(var(--primary)/0.3)]" />
-        <h1 className="text-4xl sm:text-6xl font-bold tracking-tight">
-          Your AI Co-pilot for<br />
-          <span className="text-primary">Work, Code, Learn &amp; More</span>
-        </h1>
-        <p className="mt-5 text-base sm:text-lg text-muted-foreground max-w-xl mx-auto">
-          Fluxa AI is a smart, multilingual assistant that writes code, drafts content, explains anything, and helps you ship faster.
-        </p>
-        <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
-          <Link to={user ? "/chat" : "/signup"} className="h-12 px-8 rounded-xl bg-primary text-primary-foreground font-semibold text-sm inline-flex items-center justify-center gap-2 hover:bg-primary/90 transition-colors">
-            {user ? "Continue chatting" : "Create free account"} <ArrowRight className="h-4 w-4" />
-          </Link>
-          <Link to="/signin" className="h-12 px-8 rounded-xl border border-border bg-transparent text-foreground font-semibold text-sm inline-flex items-center justify-center hover:bg-surface-2 transition-colors">
-            Sign in
-          </Link>
+      <main className="mx-auto max-w-3xl px-4 pt-12 pb-20 sm:pt-20">
+        <div className="text-center">
+          <div className="inline-flex items-center gap-1.5 rounded-full border bg-background px-3 py-1 text-xs text-muted-foreground">
+            <Sparkles className="h-3 w-3" /> AI app builder
+          </div>
+          <h1 className="mt-4 text-4xl font-bold tracking-tight sm:text-6xl">
+            Build apps by chatting.
+          </h1>
+          <p className="mt-4 text-base text-muted-foreground sm:text-lg">
+            Describe what you want. Watch it appear live, with code you can read and edit.
+          </p>
         </div>
-      </section>
 
-      {/* Features */}
-      <section className="px-4 sm:px-8 pb-24 max-w-5xl mx-auto">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <Feature icon={<Code2 className="h-5 w-5" />} title="Code generation" desc="Generate full components, debug, and refactor across 30+ languages." />
-          <Feature icon={<Sparkles className="h-5 w-5" />} title="Natural conversation" desc="Hindi, English, Hinglish — Fluxa replies in your language." />
-          <Feature icon={<ImageIcon className="h-5 w-5" />} title="Smart explanations" desc="Long docs summarized, complex topics broken down step by step." />
-          <Feature icon={<Globe2 className="h-5 w-5" />} title="Web-style answers" desc="Markdown formatting, code blocks, lists — easy to read." />
-          <Feature icon={<Zap className="h-5 w-5" />} title="Streaming replies" desc="See answers appear token by token, no waiting." />
-          <Feature icon={<Shield className="h-5 w-5" />} title="Private by default" desc="Each user's chats are isolated with row-level security." />
+        <div className="mx-auto mt-10 max-w-2xl rounded-2xl border bg-background p-3 shadow-sm">
+          <Textarea
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            placeholder="Describe the app you want to build…"
+            rows={3}
+            className="resize-none border-0 text-base focus-visible:ring-0"
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) start(prompt);
+            }}
+          />
+          <div className="flex items-center justify-between px-1 pt-2">
+            <span className="text-xs text-muted-foreground hidden sm:block">⌘ + Enter to start</span>
+            <Button onClick={() => start(prompt)} disabled={!prompt.trim() || creating}>
+              {creating ? "Starting…" : "Build it"} <ArrowRight className="ml-1 h-4 w-4" />
+            </Button>
+          </div>
         </div>
-      </section>
 
-      <footer className="border-t border-border/50 py-6 text-center text-xs text-muted-foreground">
-        © {new Date().getFullYear()} Fluxa AI · Built on Lovable
-      </footer>
-    </main>
-  );
-};
+        <div className="mx-auto mt-6 flex max-w-2xl flex-wrap justify-center gap-2">
+          {examples.map((ex) => (
+            <button
+              key={ex}
+              onClick={() => setPrompt(ex)}
+              className="rounded-full border bg-background px-3 py-1.5 text-xs text-muted-foreground transition hover:bg-accent hover:text-foreground"
+            >
+              {ex}
+            </button>
+          ))}
+        </div>
 
-const Feature = ({ icon, title, desc }: { icon: React.ReactNode; title: string; desc: string }) => (
-  <div className="rounded-2xl border border-border bg-card/50 p-5">
-    <div className="h-10 w-10 rounded-xl bg-primary/15 border border-primary/30 flex items-center justify-center text-primary mb-3">
-      {icon}
+        <div className="mt-20 grid gap-6 sm:grid-cols-3">
+          <Feature icon={<Zap className="h-5 w-5" />} title="Instant preview" desc="See your app render live as the AI types it." />
+          <Feature icon={<Code2 className="h-5 w-5" />} title="Real code" desc="React + Tailwind files you can read and download." />
+          <Feature icon={<Eye className="h-5 w-5" />} title="Iterate by chat" desc="Ask for changes — add a button, change colors, anything." />
+        </div>
+      </main>
     </div>
-    <h3 className="font-semibold text-foreground mb-1">{title}</h3>
-    <p className="text-sm text-muted-foreground">{desc}</p>
-  </div>
-);
+  );
+}
 
-export default Landing;
+function Feature({ icon, title, desc }: { icon: React.ReactNode; title: string; desc: string }) {
+  return (
+    <div className="rounded-xl border bg-background p-5">
+      <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">{icon}</div>
+      <h3 className="mt-3 font-semibold">{title}</h3>
+      <p className="mt-1 text-sm text-muted-foreground">{desc}</p>
+    </div>
+  );
+}
