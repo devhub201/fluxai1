@@ -2,45 +2,45 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Fluxa AI — Real app design system, dark with green accent */
+/* Lumo — dark purple AI builder design system */
 
 @layer base {
   :root {
-    --background: 222 30% 5%;
+    --background: 240 18% 5%;
     --foreground: 0 0% 100%;
 
-    --card: 222 24% 8%;
+    --card: 240 16% 8%;
     --card-foreground: 0 0% 100%;
-    --surface: 222 22% 9%;
-    --surface-2: 222 20% 12%;
+    --surface: 240 14% 10%;
+    --surface-2: 240 14% 13%;
 
-    --popover: 222 24% 8%;
+    --popover: 240 16% 8%;
     --popover-foreground: 0 0% 100%;
 
-    --primary: 142 71% 45%;
-    --primary-foreground: 222 30% 6%;
-    --primary-glow: 142 80% 55%;
+    --primary: 258 90% 66%;
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 270 95% 75%;
 
-    --secondary: 222 18% 14%;
+    --secondary: 240 12% 14%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 222 18% 14%;
-    --muted-foreground: 222 10% 62%;
+    --muted: 240 12% 14%;
+    --muted-foreground: 240 6% 64%;
 
-    --accent: 142 71% 45%;
-    --accent-foreground: 222 30% 6%;
+    --accent: 258 90% 66%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 75% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 222 16% 18%;
-    --input: 222 18% 14%;
-    --ring: 142 71% 45%;
+    --border: 240 12% 18%;
+    --input: 240 12% 14%;
+    --ring: 258 90% 66%;
 
-    --radius: 0.875rem;
+    --radius: 0.75rem;
 
-    --page-bg: radial-gradient(ellipse at top, hsl(222 30% 9%) 0%, hsl(222 30% 4%) 70%);
-    --glow-green: radial-gradient(circle at 50% 50%, hsl(142 80% 50% / 0.25) 0%, transparent 60%);
+    --page-bg: radial-gradient(ellipse at top, hsl(258 60% 12%) 0%, hsl(240 18% 4%) 60%);
+    --glow-purple: radial-gradient(circle at 50% 50%, hsl(258 90% 60% / 0.35) 0%, transparent 60%);
   }
 }
 
