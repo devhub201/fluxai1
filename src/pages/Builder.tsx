@@ -2,13 +2,13 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { useBuilderProject } from "@/hooks/useBuilderProject";
 import { ChatPanel } from "@/components/builder/ChatPanel";
-import { PreviewPane } from "@/components/builder/PreviewPane";
+import { BotInfoPane } from "@/components/builder/BotInfoPane";
 import { FileExplorer } from "@/components/builder/FileExplorer";
 import { CodeViewer } from "@/components/builder/CodeViewer";
 import { parseLovFiles } from "@/components/builder/parseLovFiles";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { ArrowLeft, MessageSquare, Eye, Files, Loader2 } from "lucide-react";
+import { ArrowLeft, MessageSquare, Bot, Files, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
