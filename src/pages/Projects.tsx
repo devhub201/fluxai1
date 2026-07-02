@@ -58,12 +58,6 @@ export default function Projects() {
         <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search your bots…" className="pl-9 bg-card border-border h-11" />
       </div>
 
-      <div className="mb-3 flex items-center gap-1 text-xs text-muted-foreground">
-        {["All", "Recent", "Starred", "Archived"].map((t, i) => (
-          <button key={t} className={`rounded-md px-3 py-1.5 transition ${i === 0 ? "bg-surface-2 text-foreground" : "hover:bg-surface-2"}`}>{t}</button>
-        ))}
-      </div>
-
       {loading ? (
         <div className="flex justify-center py-16"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
       ) : filtered.length === 0 ? (
