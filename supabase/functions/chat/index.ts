@@ -81,7 +81,10 @@ Deno.serve(async (req) => {
 
     const upstream = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "Lovable-API-Key": key },
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${key}`,
+      },
       body: JSON.stringify({ model: "google/gemini-2.5-pro", messages, stream: true }),
     });
 
