@@ -153,14 +153,14 @@ export default function Builder() {
         <Tabs value={mobileView} onValueChange={(v) => setMobileView(v as any)} className="flex h-full flex-col">
           <TabsList className="mx-3 mt-2 grid grid-cols-3">
             <TabsTrigger value="chat"><MessageSquare className="mr-1 h-3.5 w-3.5" />Chat</TabsTrigger>
-            <TabsTrigger value="preview"><Eye className="mr-1 h-3.5 w-3.5" />Preview</TabsTrigger>
+            <TabsTrigger value="preview"><Bot className="mr-1 h-3.5 w-3.5" />Preview</TabsTrigger>
             <TabsTrigger value="code"><Files className="mr-1 h-3.5 w-3.5" />Code</TabsTrigger>
           </TabsList>
           <TabsContent value="chat" className="flex-1 overflow-hidden m-0">
             <ChatPanel messages={messages} streaming={streaming} isLoading={isLoading} onSend={send} />
           </TabsContent>
           <TabsContent value="preview" className="flex-1 overflow-hidden m-0">
-            <PreviewPane files={files} />
+            <BotInfoPane projectTitle={project.title} files={files} />
           </TabsContent>
           <TabsContent value="code" className="flex-1 overflow-hidden m-0">
             <div className="flex h-full">
@@ -184,12 +184,12 @@ export default function Builder() {
           <Tabs defaultValue="preview" className="flex h-full flex-col">
             <div className="border-b px-3 pt-2">
               <TabsList>
-                <TabsTrigger value="preview"><Eye className="mr-1 h-3.5 w-3.5" />Preview</TabsTrigger>
+                <TabsTrigger value="preview"><Bot className="mr-1 h-3.5 w-3.5" />Preview</TabsTrigger>
                 <TabsTrigger value="code"><Files className="mr-1 h-3.5 w-3.5" />Code</TabsTrigger>
               </TabsList>
             </div>
             <TabsContent value="preview" className="flex-1 overflow-hidden m-0">
-              <PreviewPane files={files} />
+              <BotInfoPane projectTitle={project.title} files={files} />
             </TabsContent>
             <TabsContent value="code" className="flex-1 overflow-hidden m-0">
               <div className="flex h-full">

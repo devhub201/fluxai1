@@ -9,10 +9,10 @@ import { toast } from "sonner";
 import { LumoLogo } from "@/components/lumo/LumoLogo";
 
 const examples = [
-  "Build me a landing page for a SaaS product",
-  "A task manager app with dark mode",
-  "An e-commerce store for fashion",
-  "A portfolio site with case studies",
+  "Create a moderation bot with warn, mute, kick and ban",
+  "Add a ticket system with a dashboard channel",
+  "Build an economy bot with daily rewards & shop",
+  "Welcome bot with custom banner and role menu",
 ];
 
 const navLinks = [
