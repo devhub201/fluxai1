@@ -81,13 +81,13 @@ export default function Landing() {
       <main className="mx-auto max-w-4xl px-4 pt-10 pb-20 sm:pt-16">
         <div className="text-center">
           <div className="mx-auto inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-            <Sparkles className="h-3 w-3" /> AI WEBSITE BUILDER
+            <Sparkles className="h-3 w-3" /> AI DISCORD BOT BUILDER
           </div>
           <h1 className="mt-5 text-4xl font-bold tracking-tight sm:text-6xl">
-            Build websites <span className="bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">10x faster</span> with AI
+            Build Discord bots by <span className="bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">just chatting</span>
           </h1>
           <p className="mx-auto mt-4 max-w-xl text-base text-muted-foreground sm:text-lg">
-            Prompt, run, edit, and launch full websites with Lumo's AI.
+            Describe what your bot should do — Lumo writes the full discord.js project, keeps memory across turns, and exports a production-ready ZIP.
           </p>
         </div>
 
@@ -95,15 +95,15 @@ export default function Landing() {
           <Textarea
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            placeholder="Describe the website you want to build…"
+            placeholder="Describe the Discord bot you want to build…"
             rows={3}
             className="resize-none border-0 bg-transparent text-base focus-visible:ring-0"
             onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) start(prompt); }}
           />
           <div className="flex items-center justify-between gap-2 px-1 pt-2">
             <div className="flex gap-2 text-xs text-muted-foreground">
-              <button className="rounded-md border border-border px-2 py-1 hover:bg-surface-2">📎 Attach</button>
-              <button className="rounded-md border border-border px-2 py-1 hover:bg-surface-2">Import from Figma</button>
+              <span className="rounded-md border border-border px-2 py-1">🤖 discord.js v14</span>
+              <span className="rounded-md border border-border px-2 py-1">Node.js</span>
             </div>
             <Button onClick={() => start(prompt)} disabled={!prompt.trim() || creating}
               className="bg-gradient-to-r from-primary to-primary-glow">
@@ -121,27 +121,27 @@ export default function Landing() {
           ))}
         </div>
 
-        <p className="mt-10 text-center text-xs uppercase tracking-wider text-muted-foreground">Trusted by builders at</p>
-        <div className="mt-3 flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-sm text-muted-foreground/80">
-          {["▲ Vercel", "── Linear", "✦ Framer", "⚡ Supabase", "⊕ Retool"].map((b) => (
+        <p className="mt-10 text-center text-xs uppercase tracking-wider text-muted-foreground">Bot categories Lumo builds</p>
+        <div className="mt-3 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-muted-foreground/80">
+          {["Moderation", "Tickets", "Economy", "Music", "Leveling", "Giveaways", "AI Chat", "Dashboard"].map((b) => (
             <span key={b}>{b}</span>
           ))}
         </div>
 
         <section className="mt-20">
-          <h2 className="text-center text-2xl font-semibold">Everything you need to build & launch</h2>
-          <p className="mt-1 text-center text-sm text-muted-foreground">From idea to live website in minutes.</p>
+          <h2 className="text-center text-2xl font-semibold">Everything you need to ship a Discord bot</h2>
+          <p className="mt-1 text-center text-sm text-muted-foreground">From idea to a running bot in minutes.</p>
           <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Feature icon={<Sparkles />} title="AI Website Builder" desc="Create full websites from a simple prompt." />
-            <Feature icon={<Eye />} title="Live Editing" desc="Edit visually and see changes in real-time." />
-            <Feature icon={<Rocket />} title="One-Click Deploy" desc="Deploy to a global CDN in one click." />
-            <Feature icon={<Code2 />} title="Custom Code" desc="Add custom code and extend without limits." />
+            <Feature icon={<Sparkles />} title="AI Bot Builder" desc="Generate full discord.js projects from a prompt." />
+            <Feature icon={<Eye />} title="Project Memory" desc="Iterate turn after turn — Lumo remembers every file." />
+            <Feature icon={<Rocket />} title="Export ZIP" desc="Download a production-ready project, run it anywhere." />
+            <Feature icon={<Code2 />} title="Full Source" desc="Own every line — commands, events, database." />
           </div>
         </section>
       </main>
 
       <footer className="border-t border-border py-6 text-center text-xs text-muted-foreground">
-        © {new Date().getFullYear()} Lumo. Build the web with AI.
+        © {new Date().getFullYear()} Lumo. Build Discord bots with AI.
       </footer>
     </div>
   );
