@@ -62,12 +62,23 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const body = (await req.json()) as ChatRequest;
+    const body = (await req.json().catch(() => ({}))) as Partial<ChatRequest>;
     const key = Deno.env.get("LOVABLE_API_KEY");
     if (!key) return new Response("Missing LOVABLE_API_KEY", { status: 500, headers: corsHeaders });
 
-    const fileContext = Object.keys(body.currentFiles ?? {}).length
-      ? `# Current project files\n\n${Object.entries(body.currentFiles)
+    const userMessage = (body.userMessage ?? "").toString().trim();
+    if (!userMessage) {
+      return new Response(JSON.stringify({ error: "userMessage required" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const history = Array.isArray(body.history) ? body.history : [];
+    const currentFiles = (body.currentFiles ?? {}) as Record<string, string>;
+
+    const fileContext = Object.keys(currentFiles).length
+      ? `# Current project files\n\n${Object.entries(currentFiles)
           .map(([p, c]) => `<lov-file path="${p}">\n${c}\n</lov-file>`)
           .join("\n\n")}`
       : "# Current project files\n\n(none yet — this is a brand new Discord bot project)";
@@ -75,8 +86,10 @@ Deno.serve(async (req) => {
     const messages = [
       { role: "system", content: SYSTEM_PROMPT },
       { role: "system", content: fileContext },
-      ...body.history.map((m) => ({ role: m.role, content: m.content })),
-      { role: "user", content: body.userMessage },
+      ...history
+        .filter((m) => m && typeof m.content === "string" && m.content.trim().length > 0)
+        .map((m) => ({ role: m.role, content: m.content })),
+      { role: "user", content: userMessage },
     ];
 
     const upstream = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -85,7 +98,7 @@ Deno.serve(async (req) => {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${key}`,
       },
-      body: JSON.stringify({ model: "google/gemini-2.5-pro", messages, stream: true }),
+      body: JSON.stringify({ model: "google/gemini-2.5-flash", messages, stream: true }),
     });
 
     if (!upstream.ok) {
