@@ -96,9 +96,10 @@ Deno.serve(async (req) => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${key}`,
+        "Lovable-API-Key": key,
+        "X-Lovable-AIG-SDK": "edge-function-fetch",
       },
-      body: JSON.stringify({ model: "google/gemini-2.5-flash", messages, stream: true }),
+      body: JSON.stringify({ model: "google/gemini-3-flash-preview", messages, stream: true }),
     });
 
     if (!upstream.ok) {
@@ -113,7 +114,9 @@ Deno.serve(async (req) => {
       async start(controller) {
         const reader = upstream.body!.getReader();
         const decoder = new TextDecoder();
+        const encoder = new TextEncoder();
         let buf = "";
+        let closed = false;
         try {
           while (true) {
             const { value, done } = await reader.read();
@@ -125,18 +128,22 @@ Deno.serve(async (req) => {
               const t = line.trim();
               if (!t.startsWith("data:")) continue;
               const payload = t.slice(5).trim();
-              if (payload === "[DONE]") { controller.close(); return; }
+              if (payload === "[DONE]") {
+                closed = true;
+                controller.close();
+                return;
+              }
               try {
                 const j = JSON.parse(payload);
                 const delta = j.choices?.[0]?.delta?.content;
-                if (delta) controller.enqueue(new TextEncoder().encode(delta));
+                if (delta) controller.enqueue(encoder.encode(delta));
               } catch { /* ignore */ }
             }
           }
         } catch (e) {
           controller.error(e);
         } finally {
-          controller.close();
+          if (!closed) controller.close();
         }
       },
     });
