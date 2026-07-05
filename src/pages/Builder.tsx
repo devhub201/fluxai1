@@ -226,3 +226,13 @@ export default function Builder() {
     </div>
   );
 }
+
+function HeaderStat({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="flex items-center gap-1 rounded-md border border-border bg-surface-2/60 px-2 py-1 text-[11px]">
+      <span className="font-semibold">{value}</span>
+      <span className="text-muted-foreground">{label}</span>
+    </div>
+  );
+}
+
