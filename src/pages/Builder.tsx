@@ -133,20 +133,39 @@ export default function Builder() {
     );
   }
 
+  const paths = Object.keys(files);
+  const commandCount = paths.filter((p) => p.startsWith("src/commands/")).length;
+  const eventCount = paths.filter((p) => p.startsWith("src/events/")).length;
+
   return (
     <div className="flex h-screen flex-col bg-background">
-      {/* Top bar */}
-      <header className="flex items-center justify-between border-b px-3 py-2 sm:px-4">
-        <div className="flex min-w-0 items-center gap-2">
+      {/* Project context header */}
+      <header className="flex items-center justify-between gap-3 border-b bg-card/60 px-3 py-2.5 backdrop-blur sm:px-5">
+        <div className="flex min-w-0 items-center gap-3">
           <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => navigate("/projects")}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <h1 className="truncate text-sm font-medium">{project.title}</h1>
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary-glow shadow-md shadow-primary/30">
+            <Bot className="h-4 w-4 text-white" />
+          </div>
+          <div className="min-w-0">
+            <div className="truncate text-sm font-semibold leading-tight">{project.title}</div>
+            <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+              <span className={isLoading ? "text-primary" : ""}>
+                {isLoading ? "● Generating…" : "● Ready"}
+              </span>
+              <span>·</span>
+              <span>Discord bot</span>
+            </div>
+          </div>
         </div>
-        <div className="text-xs text-muted-foreground hidden sm:block">
-          {Object.keys(files).length} files
+        <div className="hidden items-center gap-1.5 sm:flex">
+          <HeaderStat label="Files" value={paths.length} />
+          <HeaderStat label="Cmds" value={commandCount} />
+          <HeaderStat label="Events" value={eventCount} />
         </div>
       </header>
+
 
       {/* Mobile tabbed view */}
       <div className="flex flex-1 flex-col overflow-hidden md:hidden">
