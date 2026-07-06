@@ -49,7 +49,7 @@ export default function Projects() {
 
   return (
     <LumoShell title="My Bots" action={
-      <Button onClick={create} className="bg-gradient-to-r from-primary to-primary-glow">
+      <Button onClick={create} className="text-white" style={{ background: "var(--gradient-primary)" }}>
         <Plus className="mr-1 h-4 w-4" />New Bot
       </Button>
     }>
@@ -70,21 +70,28 @@ export default function Projects() {
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((p) => (
-            <div key={p.id} className="group relative overflow-hidden rounded-2xl border border-border bg-card transition hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-xl hover:shadow-primary/10">
+          {filtered.map((p, idx) => (
+            <div key={p.id} className="group relative overflow-hidden rounded-2xl border border-white/[0.06] bg-card/40 backdrop-blur-xl transition-all hover-lift hover:border-primary/40 animate-fade-up" style={{ animationDelay: `${Math.min(idx * 40, 400)}ms` }}>
               <Link to={`/build/${p.id}`} className="block">
-                <div className="relative h-32 bg-gradient-to-br from-primary/40 via-primary/15 to-card">
-                  <Bot className="absolute bottom-3 left-3 h-8 w-8 text-white/80 drop-shadow" />
+                <div className="relative h-32 overflow-hidden" style={{ background: "var(--gradient-aurora)" }}>
+                  <div className="absolute inset-0 opacity-30" style={{
+                    backgroundImage: "radial-gradient(circle at 30% 20%, rgba(255,255,255,0.5), transparent 40%), radial-gradient(circle at 80% 80%, rgba(0,0,0,0.3), transparent 40%)"
+                  }} />
+                  <div className="absolute inset-0 opacity-20" style={{
+                    backgroundImage: "radial-gradient(rgba(255,255,255,0.4) 1px, transparent 1px)",
+                    backgroundSize: "16px 16px"
+                  }} />
+                  <Bot className="absolute bottom-3 left-3 h-9 w-9 text-white/95 drop-shadow-lg transition-transform group-hover:scale-110" />
                 </div>
                 <div className="p-4">
-                  <h3 className="truncate font-medium">{p.title}</h3>
+                  <h3 className="truncate font-display font-semibold">{p.title}</h3>
                   <p className="mt-1 text-xs text-muted-foreground">
                     Updated {formatDistanceToNow(new Date(p.updated_at), { addSuffix: true })}
                   </p>
                 </div>
               </Link>
               <button onClick={() => remove(p.id)}
-                className="absolute right-2 top-2 rounded-md bg-background/80 p-1.5 text-muted-foreground opacity-0 backdrop-blur transition hover:bg-destructive/20 hover:text-destructive group-hover:opacity-100">
+                className="absolute right-2 top-2 rounded-md bg-black/50 p-1.5 text-white/80 opacity-0 backdrop-blur transition hover:bg-destructive/60 hover:text-white group-hover:opacity-100">
                 <Trash2 className="h-3.5 w-3.5" />
               </button>
             </div>

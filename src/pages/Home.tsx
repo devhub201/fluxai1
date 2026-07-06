@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { LumoShell } from "@/components/lumo/LumoShell";
-import { Bot, Sparkles, Zap, Shield, Ticket, Coins, ArrowRight } from "lucide-react";
+import { Bot, Sparkles, Zap, Shield, Ticket, Coins, ArrowRight, Music, MessageSquare, Trophy } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
@@ -24,10 +24,12 @@ export default function Home() {
   }, []);
 
   const ideas = [
-    { icon: Shield, label: "Moderation bot", prompt: "Create a moderation bot with warn, mute, kick, ban and a mod log channel" },
-    { icon: Ticket, label: "Ticket system", prompt: "Build a ticket system with a support panel, ticket transcripts and staff-only channels" },
-    { icon: Coins, label: "Economy bot", prompt: "Make an economy bot with daily rewards, coins, a shop and a leaderboard" },
-    { icon: Zap, label: "Welcome + roles", prompt: "Welcome bot with custom greeting image, autoroles and a reaction role menu" },
+    { icon: Shield, label: "Moderation Suite", prompt: "Build a complete moderation bot with warn, mute, kick, ban, unban, purge, lock, unlock, slowmode and a modlog channel.", grad: "from-red-500 to-orange-500" },
+    { icon: Ticket, label: "Ticket System", prompt: "Build a ticket system with categories, private channels, staff claim, and HTML transcripts on close.", grad: "from-cyan-500 to-blue-500" },
+    { icon: Coins, label: "Economy + Casino", prompt: "Full economy bot with daily, work, shop, gambling, slots, blackjack and a leaderboard.", grad: "from-amber-500 to-yellow-500" },
+    { icon: Music, label: "Music Player", prompt: "Music bot with play, pause, skip, queue, loop, shuffle using @discordjs/voice.", grad: "from-indigo-500 to-blue-500" },
+    { icon: MessageSquare, label: "AI Chat Bot", prompt: "AI chat companion with per-user memory using Lovable AI in a designated channel.", grad: "from-sky-500 to-cyan-500" },
+    { icon: Trophy, label: "Leveling System", prompt: "Leveling bot with XP per message, level-up embeds, rank cards, and role rewards.", grad: "from-violet-500 to-purple-500" },
   ];
 
   async function startFrom(prompt: string) {
@@ -43,23 +45,24 @@ export default function Home() {
 
   return (
     <LumoShell title="Home">
-      <div className="relative overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-primary/20 via-card to-card p-8 md:p-10">
-        <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-primary/30 blur-3xl" />
+      <div className="relative overflow-hidden rounded-3xl border border-white/[0.08] bg-card/40 p-8 backdrop-blur-xl md:p-12 gradient-border animate-fade-up">
+        <div className="pointer-events-none absolute -right-32 -top-32 h-72 w-72 rounded-full opacity-40 blur-3xl animate-blob" style={{ background: "var(--gradient-aurora)" }} />
+        <div className="pointer-events-none absolute -left-20 -bottom-20 h-52 w-52 rounded-full opacity-30 blur-3xl animate-blob" style={{ background: "var(--gradient-primary)", animationDelay: "3s" }} />
         <div className="relative">
-          <div className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+          <div className="mb-4 inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
             <Sparkles className="h-3 w-3" /> AI DISCORD BOT BUILDER
           </div>
-          <h2 className="max-w-2xl text-3xl font-bold tracking-tight md:text-4xl">
-            Build any Discord bot by <span className="bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">just chatting</span>.
+          <h2 className="font-display max-w-2xl text-4xl font-bold tracking-tight md:text-5xl">
+            Ship any Discord bot by <span className="gradient-text">just chatting</span>.
           </h2>
-          <p className="mt-2 max-w-xl text-sm text-muted-foreground">
-            Describe your bot. Lumo writes the full discord.js project — commands, events, database — and exports a production-ready ZIP.
+          <p className="mt-3 max-w-xl text-sm text-muted-foreground">
+            Describe your bot. Watch Lumo write every command, event, and file — live. Export a production-ready project when you're happy.
           </p>
-          <div className="mt-5 flex flex-wrap gap-2">
-            <Button asChild className="bg-gradient-to-r from-primary to-primary-glow shadow-lg shadow-primary/30">
+          <div className="mt-6 flex flex-wrap gap-2">
+            <Button asChild className="text-white shadow-lg shadow-primary/30" style={{ background: "var(--gradient-primary)" }}>
               <Link to="/projects?new=1"><Sparkles className="mr-1.5 h-4 w-4" />Start a new bot</Link>
             </Button>
-            <Button asChild variant="outline"><Link to="/templates">Browse templates</Link></Button>
+            <Button asChild variant="outline" className="border-white/[0.08] bg-white/[0.02]"><Link to="/templates">Browse 50+ templates</Link></Button>
           </div>
         </div>
       </div>
@@ -67,27 +70,37 @@ export default function Home() {
       <div className="mt-6 grid gap-4 sm:grid-cols-3">
         <Stat label="Your bots" value={stats.projects} icon={<Bot className="h-4 w-4" />} />
         <Stat label="Framework" value="discord.js v14" icon={<Zap className="h-4 w-4" />} />
-        <Stat label="Runtime" value="Node.js" icon={<Sparkles className="h-4 w-4" />} />
+        <Stat label="Runtime" value="Node.js 20+" icon={<Sparkles className="h-4 w-4" />} />
       </div>
 
-      <section className="mt-10">
-        <div className="mb-3 flex items-center justify-between">
-          <h3 className="text-lg font-semibold">Start with an idea</h3>
+      <section className="mt-12">
+        <div className="mb-4 flex items-center justify-between">
+          <div>
+            <h3 className="font-display text-xl font-semibold">Start with an idea</h3>
+            <p className="text-xs text-muted-foreground">One click — Lumo builds the whole thing.</p>
+          </div>
+          <Link to="/templates" className="text-xs text-primary hover:underline">All templates →</Link>
         </div>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {ideas.map((i) => (
             <button
               key={i.label}
               onClick={() => startFrom(i.prompt)}
-              className="group text-left rounded-2xl border border-border bg-card p-5 transition hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-xl hover:shadow-primary/10"
+              className="group text-left overflow-hidden rounded-2xl border border-white/[0.06] bg-card/40 backdrop-blur-xl transition-all hover-lift hover:border-primary/40"
             >
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/15 text-primary">
-                <i.icon className="h-5 w-5" />
+              <div className={`relative h-24 bg-gradient-to-br ${i.grad} overflow-hidden`}>
+                <div className="absolute inset-0 opacity-20" style={{
+                  backgroundImage: "radial-gradient(rgba(255,255,255,0.4) 1px, transparent 1px)",
+                  backgroundSize: "14px 14px"
+                }} />
+                <i.icon className="absolute bottom-3 left-3 h-7 w-7 text-white drop-shadow" />
               </div>
-              <div className="mt-3 font-semibold">{i.label}</div>
-              <div className="mt-1 line-clamp-2 text-xs text-muted-foreground">{i.prompt}</div>
-              <div className="mt-3 inline-flex items-center gap-1 text-xs text-primary opacity-0 transition group-hover:opacity-100">
-                Build this <ArrowRight className="h-3 w-3" />
+              <div className="p-4">
+                <div className="font-display font-semibold">{i.label}</div>
+                <div className="mt-1 line-clamp-2 text-xs text-muted-foreground">{i.prompt}</div>
+                <div className="mt-3 inline-flex items-center gap-1 text-xs text-primary opacity-0 transition group-hover:opacity-100">
+                  Build this <ArrowRight className="h-3 w-3" />
+                </div>
               </div>
             </button>
           ))}
@@ -95,9 +108,9 @@ export default function Home() {
       </section>
 
       {recent.length > 0 && (
-        <section className="mt-10">
-          <div className="mb-3 flex items-center justify-between">
-            <h3 className="text-lg font-semibold">Recent bots</h3>
+        <section className="mt-12">
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="font-display text-xl font-semibold">Recent bots</h3>
             <Link to="/projects" className="text-xs text-primary hover:underline">View all</Link>
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -105,10 +118,14 @@ export default function Home() {
               <Link
                 key={p.id}
                 to={`/build/${p.id}`}
-                className="group overflow-hidden rounded-2xl border border-border bg-card transition hover:border-primary/50"
+                className="group overflow-hidden rounded-2xl border border-white/[0.06] bg-card/40 backdrop-blur-xl transition hover-lift hover:border-primary/40"
               >
-                <div className="relative h-24 bg-gradient-to-br from-primary/40 via-primary/10 to-transparent">
-                  <Bot className="absolute bottom-3 left-3 h-6 w-6 text-white/70" />
+                <div className="relative h-24 overflow-hidden" style={{ background: "var(--gradient-aurora)" }}>
+                  <div className="absolute inset-0 opacity-20" style={{
+                    backgroundImage: "radial-gradient(rgba(255,255,255,0.4) 1px, transparent 1px)",
+                    backgroundSize: "14px 14px"
+                  }} />
+                  <Bot className="absolute bottom-3 left-3 h-6 w-6 text-white/90 drop-shadow" />
                 </div>
                 <div className="p-4">
                   <div className="truncate text-sm font-medium">{p.title}</div>
@@ -127,9 +144,9 @@ export default function Home() {
 
 function Stat({ label, value, icon }: { label: string; value: any; icon: React.ReactNode }) {
   return (
-    <div className="rounded-2xl border border-border bg-card p-5">
+    <div className="rounded-2xl border border-white/[0.06] bg-card/40 p-5 backdrop-blur-xl">
       <div className="flex items-center gap-2 text-xs text-muted-foreground">{icon}{label}</div>
-      <div className="mt-2 text-2xl font-semibold">{value}</div>
+      <div className="font-display mt-2 text-2xl font-semibold">{value}</div>
     </div>
   );
 }

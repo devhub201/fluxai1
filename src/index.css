@@ -2,45 +2,54 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Lumo — dark purple AI builder design system */
+/* Lumo — premium dark aurora design system */
 
 @layer base {
   :root {
-    --background: 240 18% 5%;
+    --background: 240 24% 4%;
     --foreground: 0 0% 100%;
 
-    --card: 240 16% 8%;
+    --card: 240 20% 7%;
     --card-foreground: 0 0% 100%;
-    --surface: 240 14% 10%;
-    --surface-2: 240 14% 13%;
+    --surface: 240 18% 9%;
+    --surface-2: 240 16% 12%;
 
-    --popover: 240 16% 8%;
+    --popover: 240 20% 7%;
     --popover-foreground: 0 0% 100%;
 
-    --primary: 258 90% 66%;
+    /* Aurora primary: violet -> cyan */
+    --primary: 258 92% 66%;
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 270 95% 75%;
+    --primary-glow: 200 98% 60%;
+    --accent-mint: 160 84% 55%;
+    --accent-pink: 320 90% 66%;
 
-    --secondary: 240 12% 14%;
+    --secondary: 240 14% 12%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 240 12% 14%;
-    --muted-foreground: 240 6% 64%;
+    --muted: 240 14% 12%;
+    --muted-foreground: 240 8% 66%;
 
-    --accent: 258 90% 66%;
+    --accent: 258 92% 66%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 75% 60%;
+    --destructive: 0 78% 62%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 240 12% 18%;
-    --input: 240 12% 14%;
-    --ring: 258 90% 66%;
+    --border: 240 14% 16%;
+    --input: 240 14% 12%;
+    --ring: 258 92% 66%;
 
-    --radius: 0.75rem;
+    --radius: 0.85rem;
 
-    --page-bg: radial-gradient(ellipse at top, hsl(258 60% 12%) 0%, hsl(240 18% 4%) 60%);
-    --glow-purple: radial-gradient(circle at 50% 50%, hsl(258 90% 60% / 0.35) 0%, transparent 60%);
+    --page-bg: radial-gradient(ellipse 90% 60% at 50% 0%, hsl(258 60% 14% / 0.9) 0%, hsl(240 24% 4%) 55%);
+    --aurora-1: radial-gradient(circle at 20% 20%, hsl(258 90% 55% / 0.35) 0%, transparent 45%);
+    --aurora-2: radial-gradient(circle at 80% 30%, hsl(200 98% 55% / 0.28) 0%, transparent 45%);
+    --aurora-3: radial-gradient(circle at 50% 100%, hsl(320 90% 60% / 0.22) 0%, transparent 45%);
+
+    --gradient-primary: linear-gradient(135deg, hsl(258 92% 66%), hsl(200 98% 60%));
+    --gradient-aurora: linear-gradient(135deg, hsl(258 92% 66%), hsl(200 98% 60%) 50%, hsl(160 84% 55%));
+    --shadow-glow: 0 20px 60px -20px hsl(258 92% 66% / 0.45);
   }
 }
 
@@ -49,13 +58,21 @@
   html { color-scheme: dark; }
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
-  /* nicer scrollbars */
+  h1, h2, h3, h4, h5, .font-display {
+    font-family: 'Syne', 'Plus Jakarta Sans', sans-serif;
+    letter-spacing: -0.02em;
+  }
+  code, pre, .font-mono {
+    font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+  }
   ::-webkit-scrollbar { width: 8px; height: 8px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: hsl(var(--border)); border-radius: 8px; }
   ::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-foreground) / 0.4); }
+  ::selection { background: hsl(var(--primary) / 0.4); color: white; }
 }
 
 @layer components {
@@ -66,16 +83,67 @@
     @apply absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none;
   }
   .btn-primary {
-    @apply w-full h-12 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 active:scale-[0.99] transition-all flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply w-full h-12 rounded-xl font-semibold text-sm text-white active:scale-[0.99] transition-all flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed;
+    background: var(--gradient-primary);
+    box-shadow: var(--shadow-glow);
   }
   .btn-outline {
     @apply w-full h-12 rounded-xl border border-border bg-transparent text-foreground font-semibold text-sm hover:bg-surface-2 transition-colors flex items-center justify-center;
   }
-  .green-orb {
-    background: radial-gradient(circle at 50% 50%,
-      hsl(142 80% 50% / 0.45) 0%,
-      hsl(142 80% 45% / 0.15) 40%,
-      transparent 70%);
+
+  /* Aurora animated background — drop into any page container */
+  .aurora-bg {
+    position: relative;
+    isolation: isolate;
+    background: hsl(var(--background));
+  }
+  .aurora-bg::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: var(--aurora-1), var(--aurora-2), var(--aurora-3);
+    filter: blur(60px);
+    animation: aurora-drift 22s ease-in-out infinite;
+    z-index: -1;
+    pointer-events: none;
+  }
+  .aurora-bg::after {
+    content: '';
+    position: absolute; inset: 0;
+    background-image:
+      radial-gradient(hsl(var(--foreground) / 0.05) 1px, transparent 1px);
+    background-size: 32px 32px;
+    mask-image: radial-gradient(ellipse 60% 60% at 50% 0%, black, transparent 70%);
+    z-index: -1;
+    pointer-events: none;
+  }
+
+  .glass {
+    @apply border border-white/[0.06] bg-white/[0.02] backdrop-blur-xl;
+  }
+  .glass-strong {
+    @apply border border-white/[0.08] bg-white/[0.04] backdrop-blur-2xl;
+  }
+
+  .gradient-text {
+    background: var(--gradient-aurora);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .gradient-border {
+    position: relative;
+  }
+  .gradient-border::before {
+    content: '';
+    position: absolute; inset: 0;
+    padding: 1px;
+    border-radius: inherit;
+    background: var(--gradient-aurora);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+    opacity: 0.6;
   }
 
   /* Auth page shared shell */
@@ -106,4 +174,36 @@
   .prose-msg a { @apply text-primary underline; }
   .prose-msg strong { @apply font-semibold text-foreground; }
   .prose-msg blockquote { @apply border-l-2 border-primary pl-3 my-3 text-muted-foreground italic; }
+}
+
+@layer utilities {
+  .animate-fade-in { animation: fade-in 0.4s ease-out both; }
+  .animate-fade-up { animation: fade-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) both; }
+  .animate-scale-in { animation: scale-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) both; }
+  .animate-shimmer { animation: shimmer 2s linear infinite; background-size: 200% 100%; }
+  .animate-blob { animation: blob 18s ease-in-out infinite; }
+  .animate-pulse-glow { animation: pulse-glow 2.4s ease-in-out infinite; }
+  .hover-lift { @apply transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-primary/10; }
+}
+
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fade-up { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@keyframes scale-in { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+@keyframes aurora-drift {
+  0%, 100% { transform: translate3d(0,0,0) scale(1); }
+  33% { transform: translate3d(3%, -2%, 0) scale(1.05); }
+  66% { transform: translate3d(-2%, 2%, 0) scale(0.98); }
+}
+@keyframes blob {
+  0%, 100% { border-radius: 42% 58% 63% 37% / 42% 42% 58% 58%; transform: translate(0,0) rotate(0deg); }
+  33% { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; transform: translate(2%, -3%) rotate(6deg); }
+  66% { border-radius: 30% 60% 70% 40% / 50% 60% 40% 50%; transform: translate(-2%, 2%) rotate(-4deg); }
+}
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 hsl(var(--primary) / 0.35); }
+  50% { box-shadow: 0 0 0 12px hsl(var(--primary) / 0); }
 }
