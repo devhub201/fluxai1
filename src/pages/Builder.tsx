@@ -52,14 +52,9 @@ export default function Builder() {
     setStreaming("");
     setRightTab("activity");
 
-    const tempUser = {
-      id: `temp-${Date.now()}`,
-      role: "user" as const,
-      content: text,
-      created_at: new Date().toISOString(),
-    };
-    setMessages((m) => [...m, tempUser]);
-    addMessage("user", text);
+    // addMessage inserts into DB AND appends to state (see useBuilderProject).
+    // Do NOT setMessages here or the user bubble will duplicate.
+    await addMessage("user", text);
 
     try {
       const res = await fetch(`${SUPABASE_URL}/functions/v1/chat`, {
