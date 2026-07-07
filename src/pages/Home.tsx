@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { LumoShell } from "@/components/lumo/LumoShell";
-import { Bot, Sparkles, Zap, Shield, Ticket, Coins, ArrowRight, Music, MessageSquare, Trophy } from "lucide-react";
+import { Bot, Sparkles, Zap, Shield, Ticket, Coins, ArrowRight, Music, MessageSquare, Trophy, Globe, Rocket } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
@@ -43,14 +43,46 @@ export default function Home() {
     }
   }
 
+  // Live floating background icons
+  const floaters = useMemo(() => {
+    const icons = [Bot, Shield, Ticket, Coins, Music, MessageSquare, Trophy, Sparkles, Zap, Rocket, Globe];
+    return Array.from({ length: 14 }, (_, i) => ({
+      Icon: icons[i % icons.length],
+      left: `${(i * 37) % 100}%`,
+      top: `${(i * 53) % 100}%`,
+      delay: `${(i * 0.7) % 8}s`,
+      dur: `${8 + (i % 5) * 2}s`,
+      size: 20 + ((i * 7) % 26),
+    }));
+  }, []);
+
   return (
     <LumoShell title="Home">
       <div className="relative overflow-hidden rounded-3xl border border-white/[0.08] bg-card/40 p-8 backdrop-blur-xl md:p-12 gradient-border animate-fade-up">
         <div className="pointer-events-none absolute -right-32 -top-32 h-72 w-72 rounded-full opacity-40 blur-3xl animate-blob" style={{ background: "var(--gradient-aurora)" }} />
         <div className="pointer-events-none absolute -left-20 -bottom-20 h-52 w-52 rounded-full opacity-30 blur-3xl animate-blob" style={{ background: "var(--gradient-primary)", animationDelay: "3s" }} />
+
+        {/* Live floating icons background */}
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          {floaters.map((f, i) => (
+            <f.Icon
+              key={i}
+              className="absolute text-primary/20 animate-float"
+              style={{
+                left: f.left,
+                top: f.top,
+                width: f.size,
+                height: f.size,
+                animationDelay: f.delay,
+                animationDuration: f.dur,
+              }}
+            />
+          ))}
+        </div>
+
         <div className="relative">
           <div className="mb-4 inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-            <Sparkles className="h-3 w-3" /> AI DISCORD BOT BUILDER
+            <Sparkles className="h-3 w-3" /> AI DISCORD BOT BUILDER · 2026
           </div>
           <h2 className="font-display max-w-2xl text-4xl font-bold tracking-tight md:text-5xl">
             Ship any Discord bot by <span className="gradient-text">just chatting</span>.
@@ -62,7 +94,8 @@ export default function Home() {
             <Button asChild className="text-white shadow-lg shadow-primary/30" style={{ background: "var(--gradient-primary)" }}>
               <Link to="/projects?new=1"><Sparkles className="mr-1.5 h-4 w-4" />Start a new bot</Link>
             </Button>
-            <Button asChild variant="outline" className="border-white/[0.08] bg-white/[0.02]"><Link to="/templates">Browse 50+ templates</Link></Button>
+            <Button asChild variant="outline" className="border-white/[0.08] bg-white/[0.02]"><Link to="/templates">Browse 60+ templates</Link></Button>
+            <Button asChild variant="outline" className="border-primary/30 bg-primary/5 text-primary hover:bg-primary/10"><Link to="/cloner"><Globe className="mr-1.5 h-4 w-4" />Clone a website</Link></Button>
           </div>
         </div>
       </div>

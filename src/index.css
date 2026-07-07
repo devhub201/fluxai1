@@ -183,6 +183,7 @@
   .animate-shimmer { animation: shimmer 2s linear infinite; background-size: 200% 100%; }
   .animate-blob { animation: blob 18s ease-in-out infinite; }
   .animate-pulse-glow { animation: pulse-glow 2.4s ease-in-out infinite; }
+  .animate-float { animation: float 10s ease-in-out infinite; }
   .hover-lift { @apply transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-primary/10; }
 }
 
@@ -206,4 +207,8 @@
 @keyframes pulse-glow {
   0%, 100% { box-shadow: 0 0 0 0 hsl(var(--primary) / 0.35); }
   50% { box-shadow: 0 0 0 12px hsl(var(--primary) / 0); }
+}
+@keyframes float {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); opacity: 0.15; }
+  50% { transform: translate(20px, -30px) rotate(10deg); opacity: 0.35; }
 }

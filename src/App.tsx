@@ -15,6 +15,7 @@ import Builder from "./pages/Builder";
 import Projects from "./pages/Projects";
 import Home from "./pages/Home";
 import Templates from "./pages/Templates";
+import Cloner from "./pages/Cloner";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -36,6 +37,7 @@ const App = () => (
             <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
             <Route path="/projects" element={<ProtectedRoute><Projects /></ProtectedRoute>} />
             <Route path="/templates" element={<ProtectedRoute><Templates /></ProtectedRoute>} />
+            <Route path="/cloner" element={<ProtectedRoute><Cloner /></ProtectedRoute>} />
             <Route path="/build/:id" element={<ProtectedRoute><Builder /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
 

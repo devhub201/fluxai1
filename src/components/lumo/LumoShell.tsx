@@ -1,6 +1,6 @@
 import { ReactNode, useState } from "react";
 import { NavLink, Link } from "react-router-dom";
-import { Home, Sparkles, LayoutTemplate, Settings as SettingsIcon, Menu, X, Bot, Zap } from "lucide-react";
+import { Home, Sparkles, LayoutTemplate, Settings as SettingsIcon, Menu, X, Bot, Zap, Globe } from "lucide-react";
 import { LumoLogo } from "./LumoLogo";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -10,6 +10,7 @@ const nav = [
   { to: "/home", label: "Home", icon: Home },
   { to: "/projects", label: "My Bots", icon: Bot },
   { to: "/templates", label: "Templates", icon: LayoutTemplate },
+  { to: "/cloner", label: "Web Cloner", icon: Globe },
 ];
 
 export function LumoShell({
