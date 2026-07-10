@@ -8,9 +8,10 @@ import { cn } from "@/lib/utils";
 
 const nav = [
   { to: "/home", label: "Home", icon: Home },
+  { to: "/web", label: "Web Builder", icon: Sparkles },
+  { to: "/cloner", label: "Web Cloner", icon: Globe },
   { to: "/projects", label: "My Bots", icon: Bot },
   { to: "/templates", label: "Templates", icon: LayoutTemplate },
-  { to: "/cloner", label: "Web Cloner", icon: Globe },
 ];
 
 export function LumoShell({
