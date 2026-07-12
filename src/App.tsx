@@ -17,6 +17,7 @@ import Home from "./pages/Home";
 import Templates from "./pages/Templates";
 import Cloner from "./pages/Cloner";
 import WebBuilder from "./pages/WebBuilder";
+import MCHub from "./pages/MCHub";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +31,7 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Landing />} />
+            <Route path="/mchub" element={<MCHub />} />
             <Route path="/signin" element={<SignIn />} />
             <Route path="/signup" element={<SignUp />} />
             <Route path="/forgot" element={<ForgotPassword />} />
