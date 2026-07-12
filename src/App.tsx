@@ -17,6 +17,7 @@ import Home from "./pages/Home";
 import Templates from "./pages/Templates";
 import Cloner from "./pages/Cloner";
 import WebBuilder from "./pages/WebBuilder";
+import MCHub from "./pages/MCHub";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
